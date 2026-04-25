@@ -89,9 +89,17 @@ function renderTodayStudy() {
     hoursPerDay: 2,
     weeksBeforeExam: 4,
   };
-  const exams = store.get('sf_exams') || [];
+  const exams    = store.get('sf_exams') || [];
   const todayISO = DateUtils.todayISO();
-  const todayDow = new Date().getDay(); // 0=So, 1=Mo …
+  const todayDow = new Date().getDay();
+
+  // Bereits heute gelernte Minuten pro Fach
+  const savedStats  = store.get('sf_today_stats');
+  const todayKey    = new Date().toDateString();
+  const bySubject   = (savedStats && savedStats.date === todayKey && savedStats.bySubject)
+    ? savedStats.bySubject : {};
+
+  const plannedMinsPerExam = settings.hoursPerDay * 60;
 
   const todayItems = [];
 
@@ -102,15 +110,17 @@ function renderTodayStudy() {
     });
 
     examsNeedingStudy.forEach(exam => {
-      const days = DateUtils.diffDays(exam.date);
+      const days           = DateUtils.diffDays(exam.date);
+      const studiedMins    = bySubject[exam.subject] || 0;
+      const remainingMins  = Math.max(0, plannedMinsPerExam - studiedMins);
+
       if (days === 0) {
-        todayItems.push({ subject: exam.subject, type: 'exam', info: 'Klausur heute!' });
+        todayItems.push({ subject: exam.subject, type: 'exam', info: 'Klausur heute!', remainingMins: 0 });
       } else {
-        todayItems.push({
-          subject: exam.subject,
-          type: 'study',
-          info: `${settings.hoursPerDay} Std · noch ${days} ${days === 1 ? 'Tag' : 'Tage'}`,
-        });
+        const remainingStr = remainingMins === 0
+          ? `Heute erledigt · noch ${days} ${days === 1 ? 'Tag' : 'Tage'}`
+          : `${formatMins(remainingMins)} noch heute · ${days} ${days === 1 ? 'Tag' : 'Tage'}`;
+        todayItems.push({ subject: exam.subject, type: 'study', info: remainingStr, remainingMins });
       }
     });
   }
@@ -118,15 +128,22 @@ function renderTodayStudy() {
   // Klausuren die heute stattfinden (auch wenn kein Lerntag)
   exams.filter(e => e.date === todayISO).forEach(exam => {
     if (!todayItems.find(i => i.subject === exam.subject && i.type === 'exam')) {
-      todayItems.push({ subject: exam.subject, type: 'exam', info: 'Klausur heute!' });
+      todayItems.push({ subject: exam.subject, type: 'exam', info: 'Klausur heute!', remainingMins: 0 });
     }
   });
 
-  // Stat aktualisieren
-  const studyHours = todayItems.filter(i => i.type === 'study').length > 0
-    ? settings.hoursPerDay * todayItems.filter(i => i.type === 'study').length
-    : 0;
-  document.getElementById('statToday').textContent = studyHours || '0';
+  // Stat: verbleibende Lernstunden heute
+  const totalRemainingMins = todayItems
+    .filter(i => i.type === 'study')
+    .reduce((sum, i) => sum + i.remainingMins, 0);
+  const statVal = totalRemainingMins >= 60
+    ? (totalRemainingMins / 60).toFixed(1).replace(/\.0$/, '')
+    : totalRemainingMins > 0 ? `${totalRemainingMins}m` : '0';
+  document.getElementById('statToday').textContent = statVal;
+
+  // Stat: bereits gelernte Zeit heute (aus Timer-Daten)
+  const focusMins = (savedStats && savedStats.date === todayKey) ? (savedStats.focusMinutes || 0) : 0;
+  document.getElementById('statTodayDone').textContent = formatMins(focusMins);
 
   const listEl = document.getElementById('todayStudyList');
 
@@ -147,10 +164,22 @@ function renderTodayStudy() {
         <div class="study-item-meta">${item.info}</div>
       </div>
       ${item.type === 'study'
-        ? `<a href="timer.html" class="btn btn-ghost btn-sm">Start</a>`
+        ? item.remainingMins > 0
+          ? `<a href="timer.html?subject=${encodeURIComponent(item.subject)}" class="btn btn-ghost btn-sm">Start</a>`
+          : `<span class="badge badge-good">Fertig</span>`
         : `<span class="badge badge-bad">Heute</span>`
       }
     </div>`).join('');
+}
+
+/* ── Minuten lesbar formatieren (z.B. "1 Std 30 Min") ── */
+function formatMins(mins) {
+  if (mins <= 0) return '0 Min';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h > 0 && m > 0) return `${h} Std ${m} Min`;
+  if (h > 0)          return `${h} Std`;
+  return `${m} Min`;
 }
 
 /* ── Notendurchschnitt ────────────────────────────────── */
@@ -178,8 +207,144 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+/* ── Kalender-Widget ──────────────────────────────────── */
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+
+const CAL_DAYS_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+function computeStudyDays(exams, settings) {
+  const studySet = new Set();
+  const todayISO = DateUtils.todayISO();
+  exams.forEach(exam => {
+    if (exam.date < todayISO) return;
+    const examDate  = DateUtils.fromISO(exam.date);
+    const startDate = new Date(examDate);
+    startDate.setDate(startDate.getDate() - settings.weeksBeforeExam * 7);
+    const cur = new Date(startDate > DateUtils.today() ? startDate : DateUtils.today());
+    while (cur < examDate) {
+      if (settings.daysOfWeek.includes(cur.getDay())) studySet.add(DateUtils.toISO(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+  });
+  return studySet;
+}
+
+function renderCalendarWidget() {
+  const exams    = store.get('sf_exams') || [];
+  const settings = store.get('sf_study_settings') || { daysOfWeek: [1,2,3,4,5], hoursPerDay: 2, weeksBeforeExam: 4 };
+  const examDates = new Set(exams.map(e => e.date));
+  const studyDays = computeStudyDays(exams, settings);
+  const todayISO  = DateUtils.todayISO();
+
+  document.getElementById('calMonthLabel').textContent = DateUtils.formatMonth(calYear, calMonth);
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  CAL_DAYS_SHORT.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-header';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  const firstDow   = new Date(calYear, calMonth, 1).getDay();
+  const offset     = (firstDow + 6) % 7;
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+  for (let i = 0; i < offset; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day empty';
+    grid.appendChild(el);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const el  = document.createElement('div');
+    el.className = 'cal-day';
+    el.setAttribute('role', 'gridcell');
+
+    if (iso === todayISO)       el.classList.add('today');
+    if (iso < todayISO)         el.classList.add('past');
+    if (examDates.has(iso))     el.classList.add('exam-day');
+    else if (studyDays.has(iso)) el.classList.add('study-day');
+
+    el.dataset.iso  = iso;
+    el.textContent  = d;
+
+    const dots = [];
+    if (examDates.has(iso))                        dots.push('<span class="cal-dot exam"></span>');
+    if (studyDays.has(iso) && !examDates.has(iso)) dots.push('<span class="cal-dot study"></span>');
+    if (dots.length) el.insertAdjacentHTML('beforeend', `<div class="dot-row">${dots.join('')}</div>`);
+
+    el.addEventListener('click', () => showDayDetail(iso, exams, settings, studyDays));
+    grid.appendChild(el);
+  }
+}
+
+function showDayDetail(iso, exams, settings, studyDays) {
+  document.querySelectorAll('.cal-day.selected').forEach(d => d.classList.remove('selected'));
+  const activeDay = document.querySelector(`.cal-day[data-iso="${iso}"]`);
+  if (activeDay) activeDay.classList.add('selected');
+
+  const detail    = document.getElementById('dayDetail');
+  const dateEl    = document.getElementById('dayDetailDate');
+  const contentEl = document.getElementById('dayDetailContent');
+  const todayISO  = DateUtils.todayISO();
+
+  dateEl.textContent = DateUtils.formatLong(iso);
+  detail.hidden = false;
+
+  const items       = [];
+  const examsOnDay  = exams.filter(e => e.date === iso);
+  examsOnDay.forEach(e => items.push({ type: 'exam', text: `Klausur: ${e.subject}` }));
+
+  if (studyDays.has(iso) && !examsOnDay.length) {
+    const activeExams = exams.filter(e => {
+      const examDate  = DateUtils.fromISO(e.date);
+      const startDate = new Date(examDate);
+      startDate.setDate(startDate.getDate() - settings.weeksBeforeExam * 7);
+      const isoDate = DateUtils.fromISO(iso);
+      return isoDate >= startDate && isoDate < examDate;
+    });
+    if (activeExams.length) {
+      activeExams.forEach(e => {
+        const daysLeft = DateUtils.diffDays(e.date);
+        items.push({ type: 'study', text: `Lernen für: ${e.subject} · ${settings.hoursPerDay} Std (noch ${daysLeft} ${daysLeft === 1 ? 'Tag' : 'Tage'})` });
+      });
+    } else {
+      items.push({ type: 'study', text: `Lerntag · ${settings.hoursPerDay} Stunden geplant` });
+    }
+  }
+
+  if (!items.length) {
+    contentEl.innerHTML = `<p class="day-detail-empty">Kein Eintrag für diesen Tag.</p>`;
+    return;
+  }
+
+  contentEl.innerHTML = items.map(item => `
+    <div class="day-detail-item">
+      <span class="day-detail-dot ${item.type}"></span>
+      <span>${escapeHtml(item.text)}</span>
+    </div>`).join('');
+}
+
+document.getElementById('prevMonth').addEventListener('click', () => {
+  calMonth--;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendarWidget();
+});
+
+document.getElementById('nextMonth').addEventListener('click', () => {
+  calMonth++;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendarWidget();
+});
+
 /* ── Init ─────────────────────────────────────────────── */
 renderGreeting();
 renderExamList();
 renderTodayStudy();
 renderGradeAvg();
+renderCalendarWidget();

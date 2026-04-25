@@ -2,7 +2,7 @@
    Notenverwaltung
 ═══════════════════════════════════════════════════════════ */
 
-initApp('noten');
+initApp('module');
 
 // Merkt sich welche Fach-Zeilen aufgeklappt sind (Key: "semIdx-subIdx")
 const expandedSubjects = new Set();
@@ -108,12 +108,12 @@ function renderSummary() {
 
 /* ── Teilleistungen-Panel rendern ─────────────────────── */
 function renderSubGradesRow(sub, semIdx, subIdx) {
-  const key = `${semIdx}-${subIdx}`;
-  const subGrades = sub.subGrades || [];
+  const key        = `${semIdx}-${subIdx}`;
+  const subGrades  = sub.subGrades || [];
   const isExpanded = expandedSubjects.has(key);
 
   const sgRows = subGrades.map((sg, sgIdx) => {
-    const sgKey = `${semIdx}-${subIdx}-${sgIdx}`;
+    const sgKey     = `${semIdx}-${subIdx}-${sgIdx}`;
     const sgEditing = editingSgRows.has(sgKey);
 
     const nameContent = sgEditing
@@ -131,6 +131,11 @@ function renderSubGradesRow(sub, semIdx, subIdx) {
     return `
       <div class="sg-row">
         <div class="sg-col-name">${nameContent}</div>
+        <div class="sg-col-date">
+          <input class="form-input" type="date" value="${sg.examDate || ''}"
+                 data-sg-date="${semIdx},${subIdx},${sgIdx}"
+                 aria-label="Klausurdatum für ${escapeHtml(sg.name)}" />
+        </div>
         <div class="sg-col-note">
           <input class="form-input" type="number" value="${sg.grade || ''}"
                  placeholder="Note" min="1" max="5" step="0.1"
@@ -151,6 +156,10 @@ function renderSubGradesRow(sub, semIdx, subIdx) {
         <input class="form-input" type="text"
                placeholder="Prüfungsname" maxlength="80"
                data-new-sg-name="${key}" style="flex:1; min-width:0" />
+      </div>
+      <div class="sg-col-date">
+        <input class="form-input" type="date"
+               data-new-sg-date="${key}" />
       </div>
       <div class="sg-col-note">
         <input class="form-input" type="number"
@@ -185,6 +194,7 @@ function renderSemesters() {
     return;
   }
 
+  // Neueste Semester oben – semIdx bleibt der echte Array-Index für alle Datenoperationen
   listEl.innerHTML = grades.map((sem, semIdx) => {
     const subjects = sem.subjects || [];
     const weightedAvg = GradeUtils.weightedAverage(subjects);
@@ -297,7 +307,7 @@ function renderSemesters() {
           </div>
         </div>
       </div>`;
-  }).join('');
+  }).reverse().join('');
 
   attachListeners();
 }
@@ -317,14 +327,26 @@ function attachListeners() {
       if (!grades[semIdx] || !grades[semIdx].subjects[subIdx]) return;
 
       if (field === 'name') {
-        if (val) grades[semIdx].subjects[subIdx].name = val;
-        // Leer → alten Namen beibehalten
+        if (val) {
+          const sub = grades[semIdx].subjects[subIdx];
+          grades[semIdx].subjects[subIdx].name = val;
+          // Exam-Einträge aller Sub-Grades umbenennen
+          const exams = store.get('sf_exams') || [];
+          let changed = false;
+          (sub.subGrades || []).forEach(sg => {
+            if (sg.examId) {
+              const idx = exams.findIndex(e => e.id === sg.examId);
+              if (idx !== -1) { exams[idx].subject = `${val} – ${sg.name}`; changed = true; }
+            }
+          });
+          if (changed) store.set('sf_exams', exams);
+        }
       } else if (field === 'ects') {
         const num = parseInt(val);
         grades[semIdx].subjects[subIdx].ects = (val && num > 0) ? num : '';
       }
 
-      editingSubjects.add(key); // Edit-Modus nach Re-Render beibehalten
+      editingSubjects.add(key);
       saveGrades(grades);
       renderSummary();
       renderSemesters();
@@ -335,16 +357,54 @@ function attachListeners() {
   document.querySelectorAll('[data-sg-name]').forEach(input => {
     input.addEventListener('change', () => {
       const [semIdx, subIdx, sgIdx] = input.dataset.sgName.split(',').map(Number);
-      const val = input.value.trim();
+      const val    = input.value.trim();
       const grades = getGrades();
-      const sg = grades[semIdx]?.subjects[subIdx]?.subGrades?.[sgIdx];
+      const sg     = grades[semIdx]?.subjects[subIdx]?.subGrades?.[sgIdx];
       if (!sg) return;
-      if (val) sg.name = val;
-      const sgKey = `${semIdx}-${subIdx}-${sgIdx}`;
-      editingSgRows.add(sgKey); // Edit-Modus nach Re-Render beibehalten
+      if (val) {
+        sg.name = val;
+        // Exam-Subject aktualisieren
+        if (sg.examId) {
+          const modName = grades[semIdx]?.subjects[subIdx]?.name || '';
+          const exams   = store.get('sf_exams') || [];
+          const idx     = exams.findIndex(e => e.id === sg.examId);
+          if (idx !== -1) { exams[idx].subject = `${modName} – ${val}`; store.set('sf_exams', exams); }
+        }
+      }
+      editingSgRows.add(`${semIdx}-${subIdx}-${sgIdx}`);
       expandedSubjects.add(`${semIdx}-${subIdx}`);
       saveGrades(grades);
       renderSemesters();
+    });
+  });
+
+  // Datum einer Prüfungsleistung ändern
+  document.querySelectorAll('[data-sg-date]').forEach(input => {
+    input.addEventListener('change', () => {
+      const [semIdx, subIdx, sgIdx] = input.dataset.sgDate.split(',').map(Number);
+      const val    = input.value;
+      const key    = `${semIdx}-${subIdx}`;
+      const grades = getGrades();
+      const sub    = grades[semIdx]?.subjects[subIdx];
+      const sg     = sub?.subGrades?.[sgIdx];
+      if (!sg) return;
+
+      sg.examDate = val;
+
+      const exams   = store.get('sf_exams') || [];
+      if (sg.examId) {
+        const idx = exams.findIndex(e => e.id === sg.examId);
+        if (idx !== -1) { exams[idx].date = val; store.set('sf_exams', exams); }
+      } else if (val) {
+        const examId  = `exam_sg_${Date.now()}`;
+        sg.examId     = examId;
+        const modName = sub.name || '';
+        exams.push({ id: examId, subject: `${modName} – ${sg.name}`, date: val });
+        store.set('sf_exams', exams);
+      }
+
+      expandedSubjects.add(key);
+      saveGrades(grades);
     });
   });
 
@@ -358,7 +418,7 @@ function attachListeners() {
       const key    = `${semIdx}-${subIdx}`;
 
       const grades = getGrades();
-      const sub = grades[semIdx]?.subjects[subIdx];
+      const sub    = grades[semIdx]?.subjects[subIdx];
       if (!sub || !sub.subGrades || !sub.subGrades[sgIdx]) return;
 
       if (val === '') {
@@ -375,14 +435,20 @@ function attachListeners() {
     });
   });
 
-  // Fach löschen
+  // Fach löschen (inkl. aller Sub-Grade-Klausuren)
   document.querySelectorAll('[data-del-sub]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const [semIdx, subIdx] = btn.dataset.delSub.split(',').map(Number);
       const grades = getGrades();
+      const sub    = grades[semIdx]?.subjects[subIdx];
+      const sgIds  = (sub?.subGrades || []).map(sg => sg.examId).filter(Boolean);
+      if (sgIds.length) {
+        const exams = (store.get('sf_exams') || []).filter(e => !sgIds.includes(e.id));
+        store.set('sf_exams', exams);
+      }
       grades[semIdx].subjects.splice(subIdx, 1);
-      expandedSubjects.clear(); // Indizes verschieben sich – State zurücksetzen
+      expandedSubjects.clear();
       editingSubjects.clear();
       editingSgRows.clear();
       saveGrades(grades);
@@ -391,13 +457,20 @@ function attachListeners() {
     });
   });
 
-  // Semester löschen
+  // Semester löschen (inkl. aller Sub-Grade-Klausuren aller Module)
   document.querySelectorAll('[data-del-sem]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const semIdx = parseInt(btn.dataset.delSem);
       const grades = getGrades();
       if (!confirm(`Semester "${grades[semIdx]?.name}" wirklich löschen?`)) return;
+      const allSgIds = (grades[semIdx]?.subjects || [])
+        .flatMap(s => (s.subGrades || []).map(sg => sg.examId))
+        .filter(Boolean);
+      if (allSgIds.length) {
+        const exams = (store.get('sf_exams') || []).filter(e => !allSgIds.includes(e.id));
+        store.set('sf_exams', exams);
+      }
       grades.splice(semIdx, 1);
       expandedSubjects.clear();
       editingSubjects.clear();
@@ -408,10 +481,10 @@ function attachListeners() {
     });
   });
 
-  // Modul hinzufügen
+  // Modul hinzufügen (kein Datum mehr nötig – kommt über Prüfungsleistungen)
   document.querySelectorAll('[data-add-sub]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const semIdx = parseInt(btn.dataset.addSub);
+      const semIdx    = parseInt(btn.dataset.addSub);
       const nameInput = document.querySelector(`[data-new-sub-name="${semIdx}"]`);
       const ectsInput = document.querySelector(`[data-new-sub-ects="${semIdx}"]`);
 
@@ -429,55 +502,78 @@ function attachListeners() {
         subGrades: [],
       });
 
+      nameInput.value = '';
+      ectsInput.value = '';
       saveGrades(grades);
       renderSummary();
       renderSemesters();
     });
   });
 
-  // Teilleistung hinzufügen
+  // Teilleistung hinzufügen (mit optionalem Datum → sf_exams)
   document.querySelectorAll('[data-add-sg]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const [semIdx, subIdx] = btn.dataset.addSg.split(',').map(Number);
-      const key = `${semIdx}-${subIdx}`;
+      const key        = `${semIdx}-${subIdx}`;
       const nameInput  = document.querySelector(`[data-new-sg-name="${key}"]`);
+      const dateInput  = document.querySelector(`[data-new-sg-date="${key}"]`);
       const gradeInput = document.querySelector(`[data-new-sg-grade="${key}"]`);
 
-      const name  = nameInput.value.trim();
-      const grade = gradeInput.value ? parseFloat(gradeInput.value.replace(',', '.')) : '';
+      const name     = nameInput.value.trim();
+      const examDate = dateInput?.value || '';
+      const grade    = gradeInput.value ? parseFloat(gradeInput.value.replace(',', '.')) : '';
 
       if (!name) { nameInput.focus(); return; }
 
       const grades = getGrades();
-      const sub = grades[semIdx]?.subjects[subIdx];
+      const sub    = grades[semIdx]?.subjects[subIdx];
       if (!sub) return;
       if (!sub.subGrades) sub.subGrades = [];
+
+      let examId = null;
+      if (examDate) {
+        examId = `exam_sg_${Date.now()}`;
+        const exams = store.get('sf_exams') || [];
+        exams.push({ id: examId, subject: `${sub.name} – ${name}`, date: examDate });
+        store.set('sf_exams', exams);
+      }
 
       sub.subGrades.push({
         id: `sg_${Date.now()}`,
         name,
-        grade: (grade !== '' && grade >= 1 && grade <= 5) ? grade : '',
+        grade:    (grade !== '' && grade >= 1 && grade <= 5) ? grade : '',
+        examDate,
+        examId,
       });
 
-      expandedSubjects.add(key); // Zeile bleibt aufgeklappt
+      nameInput.value = '';
+      if (dateInput) dateInput.value = '';
+      gradeInput.value = '';
+
+      expandedSubjects.add(key);
       saveGrades(grades);
       renderSummary();
       renderSemesters();
     });
   });
 
-  // Teilleistung löschen
+  // Teilleistung löschen (inkl. Klausur aus sf_exams)
   document.querySelectorAll('[data-del-sg]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const [semIdx, subIdx, sgIdx] = btn.dataset.delSg.split(',').map(Number);
-      const key = `${semIdx}-${subIdx}`;
+      const key    = `${semIdx}-${subIdx}`;
       const grades = getGrades();
-      const sub = grades[semIdx]?.subjects[subIdx];
+      const sub    = grades[semIdx]?.subjects[subIdx];
       if (!sub || !sub.subGrades) return;
+      const sg = sub.subGrades[sgIdx];
+      if (sg?.examId) {
+        const exams = (store.get('sf_exams') || []).filter(e => e.id !== sg.examId);
+        store.set('sf_exams', exams);
+      }
       sub.subGrades.splice(sgIdx, 1);
-      editingSgRows.clear(); // Indizes verschieben sich
+      editingSgRows.clear();
       if (sub.subGrades.length > 0) expandedSubjects.add(key);
       saveGrades(grades);
       renderSummary();

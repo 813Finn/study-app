@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyFlow – Lernplan</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <style>
+    .settings-grid {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-4);
+    }
+
+    .lernplan-card {
+      max-width: 540px;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="page-header anim-up-1">
+      <h1>Lernplan</h1>
+      <p>Lege fest, an welchen Tagen und wie lange du vor Klausuren lernst.</p>
+    </div>
+
+    <div class="card lernplan-card anim-up-2">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Einstellungen</div>
+          <div class="card-subtitle">Gilt für alle Klausuren</div>
+        </div>
+      </div>
+      <div class="settings-grid">
+        <div class="form-group">
+          <label class="form-label">An welchen Tagen lernst du?</label>
+          <div class="checkbox-group">
+            <input type="checkbox" class="day-checkbox" id="day1" value="1" />
+            <label class="day-label" for="day1">Mo</label>
+
+            <input type="checkbox" class="day-checkbox" id="day2" value="2" />
+            <label class="day-label" for="day2">Di</label>
+
+            <input type="checkbox" class="day-checkbox" id="day3" value="3" />
+            <label class="day-label" for="day3">Mi</label>
+
+            <input type="checkbox" class="day-checkbox" id="day4" value="4" />
+            <label class="day-label" for="day4">Do</label>
+
+            <input type="checkbox" class="day-checkbox" id="day5" value="5" />
+            <label class="day-label" for="day5">Fr</label>
+
+            <input type="checkbox" class="day-checkbox" id="day6" value="6" />
+            <label class="day-label" for="day6">Sa</label>
+
+            <input type="checkbox" class="day-checkbox" id="day0" value="0" />
+            <label class="day-label" for="day0">So</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="hoursInput">Stunden pro Lerntag</label>
+          <div class="input-with-unit">
+            <input class="form-input" type="number" id="hoursInput"
+                   min="0.5" max="12" step="0.5" value="2" />
+            <span class="input-unit">Stunden</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="weeksInput">Plan startet … vor der Klausur</label>
+          <div class="input-with-unit">
+            <input class="form-input" type="number" id="weeksInput"
+                   min="1" max="16" step="1" value="4" />
+            <span class="input-unit">Wochen</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="saveSettingsBtn">
+          Einstellungen speichern
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/lernplan.js"></script>
+</body>
+</html>

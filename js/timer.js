@@ -24,22 +24,95 @@ function loadTimerSettings() {
   };
 }
 
+/* ── HTML escapen ─────────────────────────────────────── */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 /* ── State ────────────────────────────────────────────── */
-let settings     = loadTimerSettings();
-let currentPhase = 'work';   // 'work' | 'short' | 'long'
-let timeLeft     = settings.workMinutes * 60;
-let totalTime    = settings.workMinutes * 60;
-let isRunning    = false;
-let intervalId   = null;
-let cyclesDone   = 0;        // Abgeschlossene Pomodoros in diesem Zyklus
-let todayKey     = new Date().toDateString();
+let settings        = loadTimerSettings();
+let currentPhase    = 'work';   // 'work' | 'short' | 'long'
+let timeLeft        = settings.workMinutes * 60;
+let totalTime       = settings.workMinutes * 60;
+let isRunning       = false;
+let intervalId      = null;
+let cyclesDone      = 0;        // Abgeschlossene Pomodoros in diesem Zyklus
+let todayKey        = new Date().toDateString();
+let selectedSubject = '';       // Aktuell gewähltes Fach (leer = kein Fach)
+
+/* ── Minuten lesbar formatieren ───────────────────────── */
+function formatMins(mins) {
+  if (mins <= 0) return '0 Min';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h > 0 && m > 0) return `${h} Std ${m} Min`;
+  if (h > 0)          return `${h} Std`;
+  return `${m} Min`;
+}
+
+/* ── Verbleibende Zeit für gewähltes Fach anzeigen ────── */
+function renderSubjectProgress() {
+  const el = document.getElementById('subjectProgress');
+  if (!el) return;
+
+  if (!selectedSubject) {
+    el.style.display = 'none';
+    el.classList.remove('done');
+    return;
+  }
+
+  const studySettings  = store.get('sf_study_settings') || { hoursPerDay: 2 };
+  const plannedMins    = studySettings.hoursPerDay * 60;
+  const stats          = getTodayStats();
+  const studiedMins    = (stats.bySubject && stats.bySubject[selectedSubject]) || 0;
+  const remainingMins  = Math.max(0, plannedMins - studiedMins);
+
+  el.style.display = 'block';
+
+  if (remainingMins === 0) {
+    el.classList.add('done');
+    el.textContent = `✓ Heute erledigt (${formatMins(studiedMins)} gelernt)`;
+  } else {
+    el.classList.remove('done');
+    const studiedPart = studiedMins > 0 ? ` · ${formatMins(studiedMins)} bereits gelernt` : '';
+    el.textContent = `Noch ${formatMins(remainingMins)} für heute${studiedPart}`;
+  }
+}
+
+/* ── Fach-Selector befüllen ───────────────────────────── */
+function renderSubjectSelector() {
+  const sel = document.getElementById('subjectSelect');
+  if (!sel) return;
+
+  const exams    = store.get('sf_exams') || [];
+  const todayISO = DateUtils.todayISO();
+
+  // Alle noch nicht vergangenen Klausuren, alphabetisch nach Datum sortiert
+  const upcoming = exams
+    .filter(e => e.date >= todayISO)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  sel.innerHTML = `<option value="">– Kein Fach ausgewählt –</option>` +
+    upcoming.map(e =>
+      `<option value="${escapeHtml(e.subject)}">${escapeHtml(e.subject)} (${DateUtils.formatShort(e.date)})</option>`
+    ).join('');
+
+  // Vorab-Auswahl wiederherstellen (aus URL-Param oder gespeichertem Wert)
+  if (selectedSubject) sel.value = selectedSubject;
+}
 
 /* ── Tageszähler ──────────────────────────────────────── */
 function getTodayStats() {
   const saved = store.get('sf_today_stats');
   if (!saved || saved.date !== todayKey) {
-    return { date: todayKey, pomodoros: 0, focusMinutes: 0 };
+    return { date: todayKey, pomodoros: 0, focusMinutes: 0, bySubject: {} };
   }
+  // Ältere Einträge ohne bySubject absichern
+  if (!saved.bySubject) saved.bySubject = {};
   return saved;
 }
 
@@ -163,8 +236,14 @@ function nextPhase() {
     const stats = getTodayStats();
     stats.pomodoros++;
     stats.focusMinutes += settings.workMinutes;
+    // Minuten dem gewählten Fach gutschreiben
+    if (selectedSubject) {
+      if (!stats.bySubject) stats.bySubject = {};
+      stats.bySubject[selectedSubject] = (stats.bySubject[selectedSubject] || 0) + settings.workMinutes;
+    }
     saveTodayStats(stats);
     renderTodayStats();
+    renderSubjectProgress();
 
     if (cyclesDone >= settings.cyclesBeforeLong) {
       cyclesDone = 0;
@@ -296,6 +375,12 @@ document.getElementById('applySettings').addEventListener('click', () => {
   setTimeout(() => { btn.textContent = 'Übernehmen'; }, 1500);
 });
 
+// Fach-Selektor Änderung
+document.getElementById('subjectSelect').addEventListener('change', (e) => {
+  selectedSubject = e.target.value;
+  renderSubjectProgress();
+});
+
 /* ── Einstellungen-Inputs vorbelegen ──────────────────── */
 document.getElementById('setWork').value    = settings.workMinutes;
 document.getElementById('setShort').value   = settings.shortBreakMinutes;
@@ -303,5 +388,12 @@ document.getElementById('setLong').value    = settings.longBreakMinutes;
 document.getElementById('setCycles').value  = settings.cyclesBeforeLong;
 
 /* ── Init ─────────────────────────────────────────────── */
+// URL-Parameter ?subject=... auslesen (z.B. vom Dashboard-Start-Button)
+const _urlParams = new URLSearchParams(window.location.search);
+const _paramSubject = _urlParams.get('subject');
+if (_paramSubject) selectedSubject = _paramSubject;
+
+renderSubjectSelector();
+renderSubjectProgress();
 switchToPhase('work');
 renderTodayStats();

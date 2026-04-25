@@ -241,6 +241,115 @@
       gap: var(--sp-4);
     }
 
+    /* ── Info-Tooltip ── */
+    .info-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: var(--r-full);
+      border: 1.5px solid var(--fg-3);
+      color: var(--fg-3);
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'Onest', sans-serif;
+      cursor: default;
+      position: relative;
+      vertical-align: middle;
+      margin-left: var(--sp-2);
+      flex-shrink: 0;
+      transition: border-color var(--t-fast), color var(--t-fast);
+      user-select: none;
+    }
+
+    .info-btn:hover {
+      border-color: var(--accent-on-bg);
+      color: var(--accent-on-bg);
+    }
+
+    .info-tooltip {
+      position: absolute;
+      top: 50%;
+      left: calc(100% + 12px);
+      transform: translateY(-50%);
+      width: 260px;
+      background-color: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-md);
+      padding: var(--sp-3) var(--sp-4);
+      font-size: var(--text-sm);
+      color: var(--fg-2);
+      line-height: 1.5;
+      text-align: left;
+      box-shadow: 0 8px 32px oklch(0 0 0 / 0.22);
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity var(--t-fast), visibility var(--t-fast);
+      z-index: 9999;
+    }
+
+    .info-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 100%;
+      transform: translateY(-50%);
+      border: 6px solid transparent;
+      border-right-color: var(--border-subtle);
+    }
+
+    .info-tooltip::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 100%;
+      transform: translateY(-50%);
+      margin-right: -1px;
+      border: 5px solid transparent;
+      border-right-color: var(--bg-elevated);
+      z-index: 1;
+    }
+
+    .info-btn:hover .info-tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* ── Fach-Selektor ── */
+    .subject-selector {
+      max-width: 340px;
+      margin: 0 auto var(--sp-8);
+      text-align: center;
+    }
+
+    .subject-selector .form-label {
+      display: block;
+      text-align: center;
+      margin-bottom: var(--sp-2);
+    }
+
+    .subject-selector .form-input {
+      text-align: center;
+      width: 100%;
+    }
+
+    .subject-progress {
+      margin-top: var(--sp-3);
+      padding: var(--sp-2) var(--sp-4);
+      background-color: var(--bg-subtle);
+      border-radius: var(--r-full);
+      font-size: var(--text-sm);
+      color: var(--fg-2);
+      display: none;
+    }
+
+    .subject-progress.done {
+      background-color: oklch(0.60 0.15 140 / 0.12);
+      color: var(--grade-good);
+    }
+
     @media (max-width: 480px) {
       .settings-body.open {
         grid-template-columns: 1fr;
@@ -261,18 +370,36 @@
   <main class="timer-page">
     <div class="page-header anim-up-1" style="text-align:center; margin-bottom: var(--sp-8)">
       <h1>Lern-Timer</h1>
-      <p style="margin: 0 auto">Fokussiere dich mit der Pomodoro-Technik.</p>
+      <p style="margin: 0 auto; display: inline-flex; align-items: center; gap: 0">
+        Fokussiere dich mit der Pomodoro-Technik.
+        <span class="info-btn" aria-label="Was ist die Pomodoro-Technik?">
+          i
+          <span class="info-tooltip" role="tooltip">
+            <strong>Pomodoro-Technik:</strong><br>
+            Du lernst in festen Blöcken, standardmäßig 25 Minuten, gefolgt von einer kurzen Pause von 5 Minuten. Nach <strong>4 solcher Blöcke</strong> gönnst du dir eine längere Pause von 15–30 Minuten. Die regelmäßigen Pausen halten deine Konzentration frisch und beugen Ermüdung vor. Alle Zeiten und die Blockanzahl kannst du unten in den Einstellungen anpassen.
+          </span>
+        </span>
+      </p>
+    </div>
+
+    <!-- Fach auswählen -->
+    <div class="subject-selector anim-up-2">
+      <label class="form-label" for="subjectSelect">Für welches Fach lernst du?</label>
+      <select class="form-input" id="subjectSelect">
+        <option value="">– Kein Fach ausgewählt –</option>
+      </select>
+      <div class="subject-progress" id="subjectProgress"></div>
     </div>
 
     <!-- Phase-Auswahl -->
-    <div class="phase-tabs anim-up-2" role="tablist">
+    <div class="phase-tabs anim-up-3" role="tablist">
       <button class="phase-tab active" id="tabWork"  role="tab" data-phase="work">Lernen</button>
       <button class="phase-tab"        id="tabShort" role="tab" data-phase="short">Kurze Pause</button>
       <button class="phase-tab"        id="tabLong"  role="tab" data-phase="long">Lange Pause</button>
     </div>
 
     <!-- Fortschrittsring + Timer-Anzeige -->
-    <div class="timer-ring-wrapper anim-up-3">
+    <div class="timer-ring-wrapper anim-up-4">
       <svg class="timer-svg" viewBox="0 0 240 240" role="img" aria-label="Timer-Fortschritt">
         <circle class="timer-track"    cx="120" cy="120" r="104" />
         <circle class="timer-progress" cx="120" cy="120" r="104" id="timerRing" />

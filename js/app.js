@@ -60,8 +60,8 @@ function getFirstLetter(name) {
 function buildNavbarHTML(activePage) {
   const pages = [
     { key: 'dashboard', href: 'index.html',    label: 'Dashboard' },
-    { key: 'kalender',  href: 'kalender.html', label: 'Kalender'  },
-    { key: 'noten',     href: 'noten.html',    label: 'Noten'     },
+    { key: 'lernplan',  href: 'lernplan.html', label: 'Lernplan'  },
+    { key: 'module',    href: 'module.html',   label: 'Module'    },
     { key: 'timer',     href: 'timer.html',    label: 'Timer'     },
   ];
 

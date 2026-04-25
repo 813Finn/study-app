@@ -24,6 +24,15 @@ npx serve .
 
 Each page JS file calls `initApp('pagename')` as its first line, then runs its own logic.
 
+### Pages and their JS files
+
+| HTML | JS | Nav key |
+|------|----|---------|
+| `index.html` | `js/dashboard.js` | `dashboard` |
+| `lernplan.html` | `js/lernplan.js` | `lernplan` |
+| `module.html` | `js/module.js` | `module` |
+| `timer.html` | `js/timer.js` | `timer` |
+
 ### localStorage keys
 
 All keys are prefixed `sf_` to avoid collisions:
@@ -32,11 +41,13 @@ All keys are prefixed `sf_` to avoid collisions:
 |-----|-------|
 | `sf_exams` | `[{ id, subject, date }]` |
 | `sf_study_settings` | `{ daysOfWeek: number[], hoursPerDay, weeksBeforeExam }` |
-| `sf_grades` | `[{ id, name, subjects: [{ name, ects, subGrades: [{ id, name, grade }] }] }]` |
+| `sf_grades` | `[{ id, name, subjects: [{ name, ects, subGrades: [{ id, name, grade, examDate, examId }] }] }]` |
 | `sf_timer_settings` | `{ workMinutes, shortBreakMinutes, longBreakMinutes, cyclesBeforeLong }` |
-| `sf_today_stats` | `{ date: string, pomodoros, focusMinutes }` |
+| `sf_today_stats` | `{ date: string, pomodoros, focusMinutes, bySubject: { [subject: string]: minutes } }` |
 | `sf_profile` | `{ name }` |
 | `sf_theme` | `'light' \| 'dark'` |
+
+**Important cross-file relationship:** Each sub-grade (`subGrades[i]`) stores `examDate` and `examId`. When a date is set, an entry is written to `sf_exams` with `subject` formatted as `"${moduleName} – ${subGradeName}"`. Renaming a module or sub-grade must propagate to the corresponding `sf_exams` entry via `examId`. Deleting a sub-grade removes its `sf_exams` entry.
 
 ### CSS system
 
@@ -47,17 +58,19 @@ All keys are prefixed `sf_` to avoid collisions:
 - **Fonts:** `Eczar` (variable serif 400–800, headings/display numbers) + `Onest` (humanist sans, body). The navbar brand stays in Onest for a sans/serif contrast.
 - **Accent:** `oklch(0.68 0.18 58)` (amber-gold). Dark mode variant: `oklch(0.78 0.16 58)`. Never use cold blue or indigo.
 - **Surfaces:** Light theme uses warm cream tints (hue 75), dark theme uses warm dark-brown tints (hue 55–65).
-- **Calendar colors:** `--cal-exam` is warm terracotta (hue 35), `--cal-study` is warm sage green (hue 145). Both are hardcoded inline in `kalender.html`'s `<style>` block as well.
+- **Calendar colors:** `--cal-exam` is warm terracotta (hue 35), `--cal-study` is warm sage green (hue 145).
 - **Type scale:** Includes `--text-6xl: 3.75rem` used for the dashboard hero greeting.
 - **Entrance animations:** `.anim-up-1` through `.anim-up-5` in `components.css` with staggered 70ms delays. Respect `prefers-reduced-motion`.
 
 `css/components.css` contains shared UI components (navbar, buttons, cards, forms, modal, animations). Page-specific styles live in `<style>` blocks inside each HTML file.
 
-### Noten page (noten.js / noten.html)
+### Module page (module.js / module.html)
 
 Modules are created with name + ECTS only. Grades are never entered directly on a module — they are always computed as the average of its **Prüfungsleistungen** (sub-grades) via `GradeUtils.effectiveGrade()`.
 
-The layout uses **CSS Flexbox** (not `<table>`): each module row is `.subject-row-flex` with fixed-width columns `.col-name (flex:1)`, `.col-note (80px)`, `.col-ects (80px)`, `.col-actions (88px)`. The sub-grades panel (`.sub-grades-row`) is a sibling div that toggles `is-expanded`.
+The layout uses **CSS Flexbox** (not `<table>`): each module row is `.subject-row-flex` with fixed-width columns `.col-name (flex:1)`, `.col-note (80px)`, `.col-ects (80px)`, `.col-actions (88px)`. The sub-grades panel (`.sub-grades-row`) is a sibling div that toggles `is-expanded`. Each sub-grade row includes a `.sg-col-date` column (130px) for the exam date.
+
+Semesters render in **reverse order** (newest first) — the HTML array is reversed before joining, but `semIdx` values still reference the original array positions in `sf_grades`.
 
 UI state is tracked with module-level JS Sets:
 - `expandedSubjects` – which module rows have their sub-grades panel open (key: `"semIdx-subIdx"`)
@@ -68,10 +81,16 @@ Clicking the pencil button on a module auto-expands its sub-grades panel; clicki
 
 Both ECTS-weighted and unweighted averages are shown in the summary bar and per semester header, and on the dashboard (`statAvg` / `statAvgSimple`).
 
-### Study plan algorithm
+### Lernplan page (lernplan.js / lernplan.html)
 
-`kalender.js → computeStudyDays(exams, settings)` returns a `Set` of ISO date strings. Logic: for each exam, iterate every day from `(examDate − weeksBeforeExam * 7)` to `examDate`, keep only days whose `getDay()` value appears in `settings.daysOfWeek`. The result drives both the calendar highlight and the dashboard "today" block.
+Contains only study settings: which days of the week to study, hours per study day, and how many weeks before an exam to start. Saved to `sf_study_settings`. No calendar on this page.
 
-### Timer
+### Dashboard (dashboard.js / index.html)
 
-The Pomodoro state in `timer.js` is entirely in-memory (not persisted between page loads). Only the daily totals (`sf_today_stats`) and settings (`sf_timer_settings`) are saved. The SVG ring uses `stroke-dashoffset` on a circle with `r=104` (circumference ≈ 653).
+Contains the calendar widget and today's study plan. `computeStudyDays(exams, settings)` returns a `Set` of ISO date strings — for each exam, it iterates from `(examDate − weeksBeforeExam * 7)` to `examDate` and keeps days whose `getDay()` value is in `settings.daysOfWeek`. The "Start" button in the today list links to `timer.html?subject=<encoded>` to pre-select the subject in the timer.
+
+### Timer (timer.js / timer.html)
+
+The Pomodoro state is entirely in-memory (not persisted between page loads). Only `sf_today_stats` and `sf_timer_settings` are saved. The SVG ring uses `stroke-dashoffset` on a circle with `r=104` (circumference ≈ 653).
+
+The subject dropdown is populated from `sf_exams` (upcoming exams only). Selecting a subject and completing work phases increments `sf_today_stats.bySubject[subject]` (in minutes). The dashboard reads this map to show remaining study time per subject. The pre-selected subject can be passed via the `?subject=` URL parameter.
