@@ -89,7 +89,7 @@
     }
 
     .timer-time {
-      font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+      font-family: 'Eczar', Georgia, serif;
       font-size: 3.25rem;
       font-weight: 800;
       letter-spacing: -0.04em;
@@ -144,7 +144,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 16px oklch(0.58 0.20 268 / 0.35);
+      box-shadow: 0 4px 16px oklch(0.68 0.18 58 / 0.35);
       transition: background-color var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
     }
 
@@ -159,7 +159,7 @@
 
     .btn-play.break-mode {
       background-color: var(--grade-good);
-      box-shadow: 0 4px 16px oklch(0.62 0.18 148 / 0.35);
+      box-shadow: 0 4px 16px oklch(0.60 0.15 140 / 0.35);
     }
 
     /* ── Tageszähler ── */
@@ -180,7 +180,7 @@
     }
 
     .today-stat-value {
-      font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+      font-family: 'Eczar', Georgia, serif;
       font-size: var(--text-2xl);
       font-weight: 800;
       color: var(--fg);
@@ -259,20 +259,20 @@
 </head>
 <body>
   <main class="timer-page">
-    <div class="page-header" style="text-align:center; margin-bottom: var(--sp-8)">
+    <div class="page-header anim-up-1" style="text-align:center; margin-bottom: var(--sp-8)">
       <h1>Lern-Timer</h1>
       <p style="margin: 0 auto">Fokussiere dich mit der Pomodoro-Technik.</p>
     </div>
 
     <!-- Phase-Auswahl -->
-    <div class="phase-tabs" role="tablist">
+    <div class="phase-tabs anim-up-2" role="tablist">
       <button class="phase-tab active" id="tabWork"  role="tab" data-phase="work">Lernen</button>
       <button class="phase-tab"        id="tabShort" role="tab" data-phase="short">Kurze Pause</button>
       <button class="phase-tab"        id="tabLong"  role="tab" data-phase="long">Lange Pause</button>
     </div>
 
     <!-- Fortschrittsring + Timer-Anzeige -->
-    <div class="timer-ring-wrapper">
+    <div class="timer-ring-wrapper anim-up-3">
       <svg class="timer-svg" viewBox="0 0 240 240" role="img" aria-label="Timer-Fortschritt">
         <circle class="timer-track"    cx="120" cy="120" r="104" />
         <circle class="timer-progress" cx="120" cy="120" r="104" id="timerRing" />

@@ -1,25 +1,25 @@
 /* ═══════════════════════════════════════════════════════════
    Fonts
 ═══════════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Onest:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Eczar:wght@400..800&family=Onest:wght@300;400;500;600;700&display=swap');
 
 /* ═══════════════════════════════════════════════════════════
    Design Tokens
 ═══════════════════════════════════════════════════════════ */
 :root {
-  /* Brand accent – indigo/blue-violet */
-  --accent:       oklch(0.58 0.20 268);
-  --accent-hover: oklch(0.51 0.22 268);
-  --accent-dim:   oklch(0.58 0.20 268 / 0.14);
+  /* Brand accent – warm amber-gold */
+  --accent:       oklch(0.68 0.18 58);
+  --accent-hover: oklch(0.60 0.20 58);
+  --accent-dim:   oklch(0.68 0.18 58 / 0.15);
 
   /* Semantic grade colors */
-  --grade-good:   oklch(0.62 0.18 148);
+  --grade-good:   oklch(0.60 0.15 140);
   --grade-mid:    oklch(0.70 0.16 72);
-  --grade-bad:    oklch(0.58 0.20 25);
+  --grade-bad:    oklch(0.58 0.18 25);
 
-  /* Calendar event colors */
-  --cal-exam:  oklch(0.54 0.22 295);
-  --cal-study: oklch(0.60 0.17 235);
+  /* Calendar event colors – warm, cohesive with amber accent */
+  --cal-exam:  oklch(0.56 0.16 35);
+  --cal-study: oklch(0.57 0.13 145);
 
   /* Type scale (fixed rem for app UI) */
   --text-xs:   0.6875rem;   /* 11px */
@@ -32,6 +32,7 @@
   --text-3xl:  1.875rem;    /* 30px */
   --text-4xl:  2.25rem;     /* 36px */
   --text-5xl:  3rem;        /* 48px */
+  --text-6xl:  3.75rem;     /* 60px */
 
   /* 4pt spacing scale */
   --sp-1:  0.25rem;   /* 4px  */
@@ -67,42 +68,42 @@
 
 /* ── Light theme ─────────────────────────────────────────── */
 [data-theme="light"] {
-  --bg:          oklch(0.97 0.004 268);
-  --bg-elevated: oklch(1.00 0.000 268);
-  --bg-subtle:   oklch(0.93 0.007 268);
-  --bg-muted:    oklch(0.88 0.010 268);
+  --bg:          oklch(0.97 0.009 75);
+  --bg-elevated: oklch(1.00 0.002 75);
+  --bg-subtle:   oklch(0.93 0.012 75);
+  --bg-muted:    oklch(0.88 0.016 75);
 
-  --fg:          oklch(0.13 0.016 268);
-  --fg-2:        oklch(0.40 0.012 268);
-  --fg-3:        oklch(0.60 0.008 268);
+  --fg:          oklch(0.14 0.018 60);
+  --fg-2:        oklch(0.41 0.013 65);
+  --fg-3:        oklch(0.60 0.009 70);
 
-  --border:        oklch(0.85 0.010 268);
-  --border-subtle: oklch(0.91 0.006 268);
+  --border:        oklch(0.84 0.012 75);
+  --border-subtle: oklch(0.90 0.008 75);
 
-  --shadow:    0 1px 3px oklch(0.13 0.016 268 / 0.07), 0 4px 14px oklch(0.13 0.016 268 / 0.06);
-  --shadow-lg: 0 8px 32px oklch(0.13 0.016 268 / 0.10);
+  --shadow:    0 1px 3px oklch(0.14 0.018 60 / 0.08), 0 4px 16px oklch(0.14 0.018 60 / 0.07);
+  --shadow-lg: 0 8px 36px oklch(0.14 0.018 60 / 0.12);
 
   --accent-on-bg: var(--accent);
 }
 
 /* ── Dark theme ──────────────────────────────────────────── */
 [data-theme="dark"] {
-  --bg:          oklch(0.12 0.010 268);
-  --bg-elevated: oklch(0.17 0.012 268);
-  --bg-subtle:   oklch(0.21 0.014 268);
-  --bg-muted:    oklch(0.26 0.016 268);
+  --bg:          oklch(0.13 0.012 55);
+  --bg-elevated: oklch(0.18 0.014 55);
+  --bg-subtle:   oklch(0.22 0.016 58);
+  --bg-muted:    oklch(0.27 0.018 60);
 
-  --fg:          oklch(0.93 0.008 268);
-  --fg-2:        oklch(0.70 0.010 268);
-  --fg-3:        oklch(0.50 0.008 268);
+  --fg:          oklch(0.94 0.007 75);
+  --fg-2:        oklch(0.71 0.010 70);
+  --fg-3:        oklch(0.51 0.008 68);
 
-  --border:        oklch(0.28 0.016 268);
-  --border-subtle: oklch(0.22 0.012 268);
+  --border:        oklch(0.29 0.016 58);
+  --border-subtle: oklch(0.23 0.012 55);
 
-  --shadow:    0 1px 3px oklch(0 0 0 / 0.28), 0 4px 14px oklch(0 0 0 / 0.22);
-  --shadow-lg: 0 8px 32px oklch(0 0 0 / 0.42);
+  --shadow:    0 1px 3px oklch(0 0 0 / 0.32), 0 4px 16px oklch(0 0 0 / 0.26);
+  --shadow-lg: 0 8px 40px oklch(0 0 0 / 0.46);
 
-  --accent-on-bg: oklch(0.70 0.17 268);
+  --accent-on-bg: oklch(0.78 0.16 58);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -170,14 +171,14 @@ ol {
    Typography
 ═══════════════════════════════════════════════════════════ */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
-  line-height: 1.15;
+  font-family: 'Eczar', Georgia, serif;
+  line-height: 1.12;
   color: var(--fg);
 }
 
-h1 { font-size: var(--text-4xl); font-weight: 800; letter-spacing: -0.03em; }
-h2 { font-size: var(--text-3xl); font-weight: 700; letter-spacing: -0.02em; }
-h3 { font-size: var(--text-2xl); font-weight: 700; letter-spacing: -0.01em; }
+h1 { font-size: var(--text-4xl); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: var(--text-3xl); font-weight: 700; letter-spacing: -0.015em; }
+h3 { font-size: var(--text-2xl); font-weight: 700; }
 h4 { font-size: var(--text-xl);  font-weight: 600; }
 h5 { font-size: var(--text-lg);  font-weight: 600; }
 
@@ -201,15 +202,19 @@ small {
 }
 
 .page-header {
-  margin-bottom: var(--sp-10);
+  margin-bottom: var(--sp-12);
+  padding-bottom: var(--sp-8);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .page-header h1 {
-  margin-bottom: var(--sp-2);
+  font-size: var(--text-5xl);
+  margin-bottom: var(--sp-3);
 }
 
 .page-header p {
-  font-size: var(--text-md);
+  font-size: var(--text-lg);
+  max-width: 52ch;
 }
 
 /* Two-column responsive grid */

@@ -9,22 +9,26 @@
   <style>
     /* ── Dashboard-spezifisch ── */
     .dashboard-greeting {
-      margin-bottom: var(--sp-10);
+      margin-bottom: var(--sp-12);
+      padding-bottom: var(--sp-10);
+      border-bottom: 1px solid var(--border-subtle);
     }
 
     .greeting-date {
-      font-size: var(--text-sm);
+      font-size: var(--text-xs);
       color: var(--fg-3);
-      font-weight: 500;
-      margin-bottom: var(--sp-2);
-      text-transform: capitalize;
+      font-weight: 600;
+      margin-bottom: var(--sp-4);
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
     }
 
     .greeting-title {
-      font-size: var(--text-5xl);
+      font-family: 'Eczar', Georgia, serif;
+      font-size: var(--text-6xl);
       font-weight: 800;
-      letter-spacing: -0.04em;
-      line-height: 1.05;
+      letter-spacing: -0.03em;
+      line-height: 1.0;
     }
 
     .greeting-name {
@@ -106,7 +110,7 @@
     }
 
     .exam-days-num {
-      font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+      font-family: 'Eczar', Georgia, serif;
       font-size: var(--text-xl);
       font-weight: 800;
       line-height: 1;
@@ -155,7 +159,7 @@
 
   <main class="page" id="dashboardPage">
     <!-- Greeting -->
-    <div class="dashboard-greeting">
+    <div class="dashboard-greeting anim-up-1">
       <p class="greeting-date" id="greetingDate"></p>
       <h1 class="greeting-title">
         Hallo, <span class="greeting-name" id="greetingName">–</span>
@@ -163,7 +167,7 @@
     </div>
 
     <!-- Summary stats -->
-    <div class="summary-row" id="summaryRow">
+    <div class="summary-row anim-up-2" id="summaryRow">
       <div class="stat-card">
         <div class="stat-label">Aktuelle Klausuren</div>
         <div class="stat-value" id="statExams">0</div>
@@ -182,7 +186,7 @@
     </div>
 
     <!-- Today block -->
-    <div class="today-block">
+    <div class="today-block anim-up-3">
       <!-- Today's study plan -->
       <div class="card">
         <div class="card-header">

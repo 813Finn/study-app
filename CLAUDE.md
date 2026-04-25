@@ -40,9 +40,18 @@ All keys are prefixed `sf_` to avoid collisions:
 
 ### CSS system
 
-`css/style.css` defines all design tokens as CSS custom properties on `:root` (spacing, type scale, radii) and theme-specific values (`--bg`, `--fg`, `--fg-2`, `--fg-3`, `--border`, etc.) on `[data-theme="light"]` and `[data-theme="dark"]`. The accent color is OKLCH-based (`oklch(0.58 0.20 268)`). Always use existing tokens; do not hard-code colors or spacing values.
+`css/style.css` defines all design tokens as CSS custom properties on `:root` (spacing, type scale, radii) and theme-specific values (`--bg`, `--fg`, `--fg-2`, `--fg-3`, `--border`, etc.) on `[data-theme="light"]` and `[data-theme="dark"]`. Always use existing tokens; do not hard-code colors or spacing values.
 
-`css/components.css` contains shared UI components (navbar, buttons, cards, forms, modal). Page-specific styles live in `<style>` blocks inside each HTML file.
+**Design direction – "Warm Scholar":** The aesthetic is warm and bookish, not sterile SaaS.
+
+- **Fonts:** `Eczar` (variable serif 400–800, headings/display numbers) + `Onest` (humanist sans, body). The navbar brand stays in Onest for a sans/serif contrast.
+- **Accent:** `oklch(0.68 0.18 58)` (amber-gold). Dark mode variant: `oklch(0.78 0.16 58)`. Never use cold blue or indigo.
+- **Surfaces:** Light theme uses warm cream tints (hue 75), dark theme uses warm dark-brown tints (hue 55–65).
+- **Calendar colors:** `--cal-exam` is warm terracotta (hue 35), `--cal-study` is warm sage green (hue 145). Both are hardcoded inline in `kalender.html`'s `<style>` block as well.
+- **Type scale:** Includes `--text-6xl: 3.75rem` used for the dashboard hero greeting.
+- **Entrance animations:** `.anim-up-1` through `.anim-up-5` in `components.css` with staggered 70ms delays. Respect `prefers-reduced-motion`.
+
+`css/components.css` contains shared UI components (navbar, buttons, cards, forms, modal, animations). Page-specific styles live in `<style>` blocks inside each HTML file.
 
 ### Study plan algorithm
 

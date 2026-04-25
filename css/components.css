@@ -24,11 +24,11 @@
 }
 
 .navbar-brand {
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
-  font-size: var(--text-lg);
-  font-weight: 800;
+  font-family: 'Onest', system-ui, sans-serif;
+  font-size: var(--text-xl);
+  font-weight: 700;
   color: var(--fg);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   flex-shrink: 0;
 }
 
@@ -61,7 +61,7 @@
 .nav-link.active {
   color: var(--accent-on-bg);
   background-color: var(--accent-dim);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .navbar-actions {
@@ -337,11 +337,12 @@
   border-radius: var(--r-lg);
   padding: var(--sp-6);
   transition: border-color var(--t-base), box-shadow var(--t-base);
+  box-shadow: var(--shadow);
 }
 
 .card-hover:hover {
   border-color: var(--border);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-lg);
 }
 
 .card-header {
@@ -352,7 +353,7 @@
 }
 
 .card-title {
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-family: 'Eczar', Georgia, serif;
   font-size: var(--text-md);
   font-weight: 700;
   color: var(--fg);
@@ -382,7 +383,7 @@
 }
 
 .stat-value {
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-family: 'Eczar', Georgia, serif;
   font-size: var(--text-4xl);
   font-weight: 800;
   color: var(--fg);
@@ -526,7 +527,7 @@
 }
 
 .badge-good {
-  background-color: oklch(0.62 0.18 148 / 0.15);
+  background-color: oklch(0.60 0.15 140 / 0.15);
   color: var(--grade-good);
 }
 
@@ -588,7 +589,7 @@
 }
 
 .modal-title {
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-family: 'Eczar', Georgia, serif;
   font-size: var(--text-xl);
   font-weight: 700;
   color: var(--fg);
@@ -663,7 +664,7 @@
 }
 
 .section-title {
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-family: 'Eczar', Georgia, serif;
   font-size: var(--text-md);
   font-weight: 700;
   color: var(--fg);
@@ -698,7 +699,7 @@
    Grade display
 ═══════════════════════════════════════════════════════════ */
 .grade-display {
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-family: 'Eczar', Georgia, serif;
   font-weight: 700;
   color: var(--fg);
 }
@@ -706,3 +707,34 @@
 .grade-good  { color: var(--grade-good); }
 .grade-mid   { color: var(--grade-mid); }
 .grade-bad   { color: var(--grade-bad); }
+
+/* ═══════════════════════════════════════════════════════════
+   Entrance Animations
+═══════════════════════════════════════════════════════════ */
+@keyframes animUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-up {
+  animation: animUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.anim-up-1 { animation: animUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0ms   both; }
+.anim-up-2 { animation: animUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 70ms  both; }
+.anim-up-3 { animation: animUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 140ms both; }
+.anim-up-4 { animation: animUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 210ms both; }
+.anim-up-5 { animation: animUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 280ms both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-up,
+  .anim-up-1, .anim-up-2, .anim-up-3, .anim-up-4, .anim-up-5 {
+    animation: none;
+  }
+}

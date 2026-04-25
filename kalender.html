@@ -24,7 +24,7 @@
     }
 
     .calendar-month {
-      font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+      font-family: 'Eczar', Georgia, serif;
       font-size: var(--text-xl);
       font-weight: 700;
       color: var(--fg);
@@ -92,19 +92,19 @@
     }
 
     .cal-day.study-day {
-      background-color: oklch(0.60 0.17 235 / 0.18);
+      background-color: oklch(0.57 0.13 145 / 0.18);
       color: var(--cal-study);
       font-weight: 600;
     }
 
     .cal-day.exam-day {
-      background-color: oklch(0.54 0.22 295 / 0.18);
+      background-color: oklch(0.56 0.16 35 / 0.18);
       color: var(--cal-exam);
       font-weight: 700;
     }
 
     .cal-day.today.exam-day {
-      background-color: oklch(0.54 0.22 295 / 0.25);
+      background-color: oklch(0.56 0.16 35 / 0.25);
     }
 
     /* Dot indicators */
@@ -260,14 +260,14 @@
 </head>
 <body>
   <main class="page">
-    <div class="page-header">
+    <div class="page-header anim-up-1">
       <h1>Kalender</h1>
       <p>Klausuren eintragen, Lernplan einrichten und deinen Fortschritt im Blick behalten.</p>
     </div>
 
     <div class="kalender-layout">
       <!-- Linke Spalte: Kalender -->
-      <div>
+      <div class="anim-up-2">
         <div class="card">
           <!-- Monats-Navigation -->
           <div class="calendar-nav">

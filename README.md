@@ -24,7 +24,8 @@ Oder mit einem lokalen Dev-Server (z. B. VS Code Live Server, `npx serve .`).
 
 - Reines HTML, CSS und Vanilla JavaScript – kein Framework, kein Build-Tool
 - Alle Daten werden im `localStorage` des Browsers gespeichert
-- Schriften: [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque) + [Onest](https://fonts.google.com/specimen/Onest) via Google Fonts
+- Schriften: [Eczar](https://fonts.google.com/specimen/Eczar) (variable Serif, Überschriften) + [Onest](https://fonts.google.com/specimen/Onest) (Body) via Google Fonts
+- Design-Richtung „Warm Scholar": Amber-Gold-Akzent, cremige Oberflächen, warme Erdtöne
 
 ## Projektstruktur
 
