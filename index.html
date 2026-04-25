@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyFlow – Dashboard</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <style>
+    /* ── Dashboard-spezifisch ── */
+    .dashboard-greeting {
+      margin-bottom: var(--sp-10);
+    }
+
+    .greeting-date {
+      font-size: var(--text-sm);
+      color: var(--fg-3);
+      font-weight: 500;
+      margin-bottom: var(--sp-2);
+      text-transform: capitalize;
+    }
+
+    .greeting-title {
+      font-size: var(--text-5xl);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+    }
+
+    .greeting-name {
+      color: var(--accent-on-bg);
+    }
+
+    /* Today block */
+    .today-block {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-6);
+      margin-bottom: var(--sp-8);
+    }
+
+    /* Study plan items */
+    .study-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      padding: var(--sp-3) var(--sp-4);
+      border-radius: var(--r-md);
+      transition: background-color var(--t-fast);
+    }
+
+    .study-item:hover {
+      background-color: var(--bg-subtle);
+    }
+
+    .study-item-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--r-full);
+      background-color: var(--cal-study);
+      flex-shrink: 0;
+    }
+
+    .study-item-dot.exam {
+      background-color: var(--cal-exam);
+    }
+
+    .study-item-text {
+      flex: 1;
+    }
+
+    .study-item-title {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--fg);
+    }
+
+    .study-item-meta {
+      font-size: var(--text-xs);
+      color: var(--fg-3);
+      margin-top: 1px;
+    }
+
+    /* Exam list */
+    .exam-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-4);
+      padding: var(--sp-4) 0;
+    }
+
+    .exam-item + .exam-item {
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .exam-days-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 52px;
+      height: 52px;
+      border-radius: var(--r-md);
+      background-color: var(--bg-subtle);
+      flex-shrink: 0;
+    }
+
+    .exam-days-num {
+      font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+      font-size: var(--text-xl);
+      font-weight: 800;
+      line-height: 1;
+      color: var(--fg);
+    }
+
+    .exam-days-label {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--fg-3);
+      margin-top: 1px;
+    }
+
+    .exam-days-badge.urgent .exam-days-num  { color: var(--grade-bad); }
+    .exam-days-badge.urgent                 { background-color: oklch(0.58 0.20 25 / 0.10); }
+    .exam-days-badge.soon .exam-days-num    { color: var(--grade-mid); }
+    .exam-days-badge.soon                   { background-color: oklch(0.70 0.16 72 / 0.10); }
+
+    /* Summary numbers */
+    .summary-row {
+      display: flex;
+      gap: var(--sp-6);
+      margin-bottom: var(--sp-8);
+    }
+
+    @media (max-width: 768px) {
+      .today-block {
+        grid-template-columns: 1fr;
+      }
+
+      .greeting-title {
+        font-size: var(--text-4xl);
+      }
+
+      .summary-row {
+        flex-wrap: wrap;
+        gap: var(--sp-4);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar → injected by app.js -->
+
+  <main class="page" id="dashboardPage">
+    <!-- Greeting -->
+    <div class="dashboard-greeting">
+      <p class="greeting-date" id="greetingDate"></p>
+      <h1 class="greeting-title">
+        Hallo, <span class="greeting-name" id="greetingName">–</span>
+      </h1>
+    </div>
+
+    <!-- Summary stats -->
+    <div class="summary-row" id="summaryRow">
+      <div class="stat-card">
+        <div class="stat-label">Aktuelle Klausuren</div>
+        <div class="stat-value" id="statExams">0</div>
+        <div class="stat-sub">eingetragen</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Notendurchschnitt</div>
+        <div class="stat-value" id="statAvg">–</div>
+        <div class="stat-sub">Gesamtschnitt</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Heute geplant</div>
+        <div class="stat-value" id="statToday">0</div>
+        <div class="stat-sub">Lernstunden</div>
+      </div>
+    </div>
+
+    <!-- Today block -->
+    <div class="today-block">
+      <!-- Today's study plan -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Heute</div>
+            <div class="card-subtitle" id="todaySubtitle">Was steht heute an?</div>
+          </div>
+        </div>
+        <div id="todayStudyList">
+          <div class="empty-state">
+            <div class="empty-state-icon">📅</div>
+            <p>Heute stehen keine Lerneinheiten an.<br>Trag eine Klausur ein um deinen Plan zu starten.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming exams -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Nächste Klausuren</div>
+          <a href="kalender.html" class="btn btn-ghost btn-sm">+ Hinzufügen</a>
+        </div>
+        <div id="examList">
+          <div class="empty-state">
+            <div class="empty-state-icon">🎓</div>
+            <p>Noch keine Klausuren eingetragen.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+/* ═══════════════════════════════════════════════════════════
+   Pomodoro-Timer
+═══════════════════════════════════════════════════════════ */
+
+initApp('timer');
+
+/* ── Konstanten ───────────────────────────────────────── */
+const CIRCUMFERENCE = 2 * Math.PI * 104; // ≈ 653.45
+
+const PHASE_LABELS = {
+  work:  'Lernphase',
+  short: 'Kurze Pause',
+  long:  'Lange Pause',
+};
+
+/* ── Settings laden ───────────────────────────────────── */
+function loadTimerSettings() {
+  return {
+    workMinutes:      25,
+    shortBreakMinutes: 5,
+    longBreakMinutes:  15,
+    cyclesBeforeLong:  4,
+    ...(store.get('sf_timer_settings') || {}),
+  };
+}
+
+/* ── State ────────────────────────────────────────────── */
+let settings     = loadTimerSettings();
+let currentPhase = 'work';   // 'work' | 'short' | 'long'
+let timeLeft     = settings.workMinutes * 60;
+let totalTime    = settings.workMinutes * 60;
+let isRunning    = false;
+let intervalId   = null;
+let cyclesDone   = 0;        // Abgeschlossene Pomodoros in diesem Zyklus
+let todayKey     = new Date().toDateString();
+
+/* ── Tageszähler ──────────────────────────────────────── */
+function getTodayStats() {
+  const saved = store.get('sf_today_stats');
+  if (!saved || saved.date !== todayKey) {
+    return { date: todayKey, pomodoros: 0, focusMinutes: 0 };
+  }
+  return saved;
+}
+
+function saveTodayStats(stats) {
+  store.set('sf_today_stats', stats);
+}
+
+function renderTodayStats() {
+  const stats = getTodayStats();
+  document.getElementById('statPomodoros').textContent = stats.pomodoros;
+  const h = Math.floor(stats.focusMinutes / 60);
+  const m = stats.focusMinutes % 60;
+  document.getElementById('statFocusTime').textContent =
+    h > 0 ? `${h} h ${m} Min` : `${m} Min`;
+}
+
+/* ── Zeitanzeige ──────────────────────────────────────── */
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+/* ── SVG-Ring aktualisieren ───────────────────────────── */
+function updateRing() {
+  const progress = totalTime > 0 ? timeLeft / totalTime : 1;
+  const offset   = CIRCUMFERENCE * (1 - progress);
+  document.getElementById('timerRing').style.strokeDashoffset = offset;
+}
+
+/* ── Zyklus-Dots ──────────────────────────────────────── */
+function renderCycleDots() {
+  const dotsEl = document.getElementById('cycleDots');
+  dotsEl.innerHTML = Array.from({ length: settings.cyclesBeforeLong }, (_, i) =>
+    `<div class="cycle-dot ${i < cyclesDone ? 'done' : ''}" aria-hidden="true"></div>`
+  ).join('');
+}
+
+/* ── Vollständige UI aktualisieren ────────────────────── */
+function updateUI() {
+  document.getElementById('timerDisplay').textContent    = formatTime(timeLeft);
+  document.getElementById('timerPhaseLabel').textContent = PHASE_LABELS[currentPhase];
+
+  const isBreak = currentPhase !== 'work';
+  const ring    = document.getElementById('timerRing');
+  const playBtn = document.getElementById('playPauseBtn');
+
+  ring.classList.toggle('break-mode', isBreak);
+  playBtn.classList.toggle('break-mode', isBreak);
+
+  // Play/Pause-Icon tauschen
+  document.getElementById('iconPlay').style.display  = isRunning ? 'none'  : 'block';
+  document.getElementById('iconPause').style.display = isRunning ? 'block' : 'none';
+
+  playBtn.setAttribute('aria-label', isRunning ? 'Pausieren' : 'Starten');
+
+  // Dokument-Titel
+  document.title = `${formatTime(timeLeft)} – ${PHASE_LABELS[currentPhase]} · StudyFlow`;
+
+  // Phase-Tabs
+  document.querySelectorAll('.phase-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.phase === currentPhase);
+  });
+
+  updateRing();
+  renderCycleDots();
+}
+
+/* ── Ton-Signal (Web Audio API) ───────────────────────── */
+function playBeep(type = 'work') {
+  try {
+    const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === 'work') {
+      // Höherer, kräftiger Ton: Lernphase beginnt
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.30, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.7);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.7);
+    } else {
+      // Weicherer, tiefer Ton: Pause beginnt
+      osc.frequency.value = 528;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.20, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 1.0);
+    }
+  } catch {
+    // Audio nicht verfügbar → still ignorieren
+  }
+}
+
+/* ── Browser-Notification ─────────────────────────────── */
+function sendNotification(title, body) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '' });
+  }
+}
+
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+/* ── Phase abschließen → nächste Phase starten ────────── */
+function nextPhase() {
+  stopTimer();
+
+  if (currentPhase === 'work') {
+    // Pomodoro fertig
+    cyclesDone++;
+    const stats = getTodayStats();
+    stats.pomodoros++;
+    stats.focusMinutes += settings.workMinutes;
+    saveTodayStats(stats);
+    renderTodayStats();
+
+    if (cyclesDone >= settings.cyclesBeforeLong) {
+      cyclesDone = 0;
+      switchToPhase('long');
+      playBeep('break');
+      sendNotification('Lange Pause!', `Du hast ${settings.cyclesBeforeLong} Pomodoros geschafft. Zeit für eine längere Pause.`);
+    } else {
+      switchToPhase('short');
+      playBeep('break');
+      sendNotification('Kurze Pause!', `Pomodoro ${cyclesDone} abgeschlossen. ${settings.cyclesBeforeLong - cyclesDone} bis zur langen Pause.`);
+    }
+  } else {
+    // Pause vorbei → zurück zum Lernen
+    switchToPhase('work');
+    playBeep('work');
+    sendNotification('Lernphase!', 'Pause vorbei – zurück an die Bücher!');
+  }
+
+  renderCycleDots();
+  renderTodayStats();
+}
+
+/* ── Phase wechseln ───────────────────────────────────── */
+function switchToPhase(phase) {
+  currentPhase = phase;
+
+  if (phase === 'work')  totalTime = settings.workMinutes       * 60;
+  if (phase === 'short') totalTime = settings.shortBreakMinutes * 60;
+  if (phase === 'long')  totalTime = settings.longBreakMinutes  * 60;
+
+  timeLeft  = totalTime;
+  isRunning = false;
+  updateUI();
+}
+
+/* ── Timer-Tick ───────────────────────────────────────── */
+function tick() {
+  if (timeLeft <= 0) {
+    nextPhase();
+    return;
+  }
+  timeLeft--;
+  updateUI();
+}
+
+/* ── Start / Stop ─────────────────────────────────────── */
+function startTimer() {
+  if (isRunning) return;
+  isRunning  = true;
+  intervalId = setInterval(tick, 1000);
+  updateUI();
+  requestNotificationPermission();
+}
+
+function stopTimer() {
+  if (!isRunning) return;
+  isRunning = false;
+  clearInterval(intervalId);
+  intervalId = null;
+  updateUI();
+}
+
+function toggleTimer() {
+  isRunning ? stopTimer() : startTimer();
+}
+
+function resetTimer() {
+  stopTimer();
+  timeLeft  = totalTime;
+  isRunning = false;
+  updateUI();
+}
+
+/* ── Event-Listener ───────────────────────────────────── */
+document.getElementById('playPauseBtn').addEventListener('click', toggleTimer);
+
+document.getElementById('resetBtn').addEventListener('click', resetTimer);
+
+document.getElementById('skipBtn').addEventListener('click', () => {
+  stopTimer();
+  nextPhase();
+});
+
+// Phase-Tab manuell wählen
+document.querySelectorAll('.phase-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    stopTimer();
+    switchToPhase(tab.dataset.phase);
+  });
+});
+
+// Tastatur-Shortcut: Leertaste = Play/Pause
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && e.target === document.body) {
+    e.preventDefault();
+    toggleTimer();
+  }
+});
+
+/* ── Einstellungen ────────────────────────────────────── */
+document.getElementById('settingsToggle').addEventListener('click', () => {
+  const body    = document.getElementById('settingsBody');
+  const toggle  = document.getElementById('settingsToggle');
+  const isOpen  = body.classList.toggle('open');
+  toggle.setAttribute('aria-expanded', isOpen);
+});
+
+document.getElementById('applySettings').addEventListener('click', () => {
+  const work   = parseInt(document.getElementById('setWork').value)   || 25;
+  const short_ = parseInt(document.getElementById('setShort').value)  || 5;
+  const long_  = parseInt(document.getElementById('setLong').value)   || 15;
+  const cycles = parseInt(document.getElementById('setCycles').value) || 4;
+
+  settings = {
+    workMinutes:       Math.max(1, Math.min(120, work)),
+    shortBreakMinutes: Math.max(1, Math.min(60,  short_)),
+    longBreakMinutes:  Math.max(1, Math.min(120, long_)),
+    cyclesBeforeLong:  Math.max(2, Math.min(8,   cycles)),
+  };
+  store.set('sf_timer_settings', settings);
+
+  // Timer zurücksetzen auf neue Werte
+  stopTimer();
+  switchToPhase(currentPhase);
+  renderCycleDots();
+
+  const btn = document.getElementById('applySettings');
+  btn.textContent = 'Übernommen ✓';
+  setTimeout(() => { btn.textContent = 'Übernehmen'; }, 1500);
+});
+
+/* ── Einstellungen-Inputs vorbelegen ──────────────────── */
+document.getElementById('setWork').value    = settings.workMinutes;
+document.getElementById('setShort').value   = settings.shortBreakMinutes;
+document.getElementById('setLong').value    = settings.longBreakMinutes;
+document.getElementById('setCycles').value  = settings.cyclesBeforeLong;
+
+/* ── Init ─────────────────────────────────────────────── */
+switchToPhase('work');
+renderTodayStats();

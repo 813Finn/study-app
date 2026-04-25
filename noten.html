@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyFlow – Noten</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <style>
+    /* ── Summary bar ── */
+    .grade-summary {
+      display: flex;
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-8);
+      flex-wrap: wrap;
+    }
+
+    /* ── Semester block ── */
+    .semester-block {
+      margin-bottom: var(--sp-6);
+    }
+
+    .semester-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-4) var(--sp-5);
+      background-color: var(--bg-subtle);
+      border-radius: var(--r-md) var(--r-md) 0 0;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color var(--t-fast);
+    }
+
+    .semester-header:hover {
+      background-color: var(--bg-muted);
+    }
+
+    .semester-header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+    }
+
+    .semester-name {
+      font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+      font-size: var(--text-md);
+      font-weight: 700;
+      color: var(--fg);
+    }
+
+    .semester-avg {
+      font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+      font-size: var(--text-xl);
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .semester-body {
+      border: 1px solid var(--border-subtle);
+      border-top: none;
+      border-radius: 0 0 var(--r-md) var(--r-md);
+      overflow: hidden;
+    }
+
+    /* Subject table */
+    .subjects-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .subjects-table th {
+      background-color: var(--bg-elevated);
+      padding: var(--sp-3) var(--sp-4);
+      text-align: left;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--fg-3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .subjects-table th:last-child,
+    .subjects-table td:last-child {
+      text-align: right;
+    }
+
+    .subjects-table td {
+      padding: var(--sp-3) var(--sp-4);
+      font-size: var(--text-sm);
+      color: var(--fg);
+      vertical-align: middle;
+    }
+
+    .subjects-table tr:nth-child(even) td {
+      background-color: var(--bg);
+    }
+
+    .subjects-table tr:nth-child(odd) td {
+      background-color: var(--bg-elevated);
+    }
+
+    .subject-name-cell {
+      font-weight: 500;
+    }
+
+    .grade-cell {
+      font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+      font-weight: 700;
+      font-size: var(--text-md);
+    }
+
+    /* Add subject row */
+    .add-subject-row {
+      display: flex;
+      gap: var(--sp-2);
+      padding: var(--sp-3) var(--sp-4);
+      background-color: var(--bg-subtle);
+      border-top: 1px solid var(--border-subtle);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .add-subject-row .form-input {
+      flex: 2;
+      min-width: 120px;
+    }
+
+    .add-subject-row .form-input.narrow {
+      flex: 1;
+      min-width: 80px;
+    }
+
+    /* Add semester form */
+    .add-semester-form {
+      display: flex;
+      gap: var(--sp-3);
+      align-items: flex-end;
+      flex-wrap: wrap;
+      padding: var(--sp-5);
+      background-color: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
+      margin-bottom: var(--sp-8);
+    }
+
+    .add-semester-form .form-group {
+      flex: 1;
+      min-width: 160px;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="page-header">
+      <h1>Noten</h1>
+      <p>Fächer und Noten eintragen – dein Schnitt wird automatisch ECTS-gewichtet berechnet.</p>
+    </div>
+
+    <!-- Gesamtüberblick -->
+    <div class="grade-summary" id="gradeSummary"></div>
+
+    <!-- Semester hinzufügen -->
+    <div class="add-semester-form">
+      <div class="form-group">
+        <label class="form-label" for="semesterNameInput">Neues Semester</label>
+        <input class="form-input" type="text" id="semesterNameInput"
+               placeholder="z.B. WS 24/25 oder SoSe 25" maxlength="40" />
+      </div>
+      <button class="btn btn-primary" id="addSemesterBtn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Semester anlegen
+      </button>
+    </div>
+
+    <!-- Semester-Liste -->
+    <div id="semesterList">
+      <div class="empty-state" style="padding-top: var(--sp-20)">
+        <div class="empty-state-icon">📚</div>
+        <p>Noch kein Semester angelegt.<br>Erstelle dein erstes Semester oben.</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/noten.js"></script>
+</body>
+</html>
