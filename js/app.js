@@ -333,14 +333,30 @@ const DateUtils = {
 
 /* ── Grade-Utilities ──────────────────────────────────── */
 const GradeUtils = {
+  // Effektive Note eines Fachs (berechnet aus Teilleistungen oder direkt)
+  effectiveGrade(sub) {
+    const sgs = (sub.subGrades || []).filter(sg => sg.grade !== '' && sg.grade != null);
+    if (sgs.length > 0) {
+      return sgs.reduce((sum, sg) => sum + Number(sg.grade), 0) / sgs.length;
+    }
+    return (sub.grade !== '' && sub.grade != null) ? Number(sub.grade) : null;
+  },
+
   // ECTS-gewichteter Durchschnitt
   weightedAverage(subjects) {
-    const withGrade = subjects.filter(s => s.grade && s.ects);
+    const withGrade = subjects.filter(s => GradeUtils.effectiveGrade(s) !== null && s.ects);
     if (!withGrade.length) return null;
     const totalEcts = withGrade.reduce((sum, s) => sum + Number(s.ects), 0);
     if (!totalEcts) return null;
-    const weighted  = withGrade.reduce((sum, s) => sum + Number(s.grade) * Number(s.ects), 0);
+    const weighted  = withGrade.reduce((sum, s) => sum + GradeUtils.effectiveGrade(s) * Number(s.ects), 0);
     return weighted / totalEcts;
+  },
+
+  // Ungewichteter Durchschnitt (alle Fächer gleich gewichtet)
+  simpleAverage(subjects) {
+    const valid = subjects.filter(s => GradeUtils.effectiveGrade(s) !== null);
+    if (!valid.length) return null;
+    return valid.reduce((sum, s) => sum + GradeUtils.effectiveGrade(s), 0) / valid.length;
   },
 
   // Klasse für Farbgebung

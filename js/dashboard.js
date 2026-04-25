@@ -157,11 +157,16 @@ function renderTodayStudy() {
 function renderGradeAvg() {
   const grades = store.get('sf_grades') || [];
   const allSubjects = grades.flatMap(sem => sem.subjects || []);
-  const avg = GradeUtils.weightedAverage(allSubjects);
+  const weightedAvg = GradeUtils.weightedAverage(allSubjects);
+  const simpleAvg   = GradeUtils.simpleAverage(allSubjects);
 
   const el = document.getElementById('statAvg');
-  el.textContent = GradeUtils.format(avg);
-  el.className = `stat-value ${GradeUtils.gradeClass(avg)}`;
+  el.textContent = GradeUtils.format(weightedAvg);
+  el.className = `stat-value ${GradeUtils.gradeClass(weightedAvg)}`;
+
+  const el2 = document.getElementById('statAvgSimple');
+  el2.textContent = GradeUtils.format(simpleAvg);
+  el2.className = `stat-value ${GradeUtils.gradeClass(simpleAvg)}`;
 }
 
 /* ── HTML escapen ─────────────────────────────────────── */

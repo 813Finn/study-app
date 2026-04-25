@@ -313,6 +313,8 @@
   padding: var(--sp-2) var(--sp-3);
   font-size: var(--text-xs);
   border-radius: var(--r-sm);
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .btn-lg {

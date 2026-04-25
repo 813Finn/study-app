@@ -19,7 +19,7 @@ npx serve .
 
 - `store` – localStorage wrapper (`store.get(key)`, `store.set(key, val)`, `store.remove(key)`)
 - `DateUtils` – date helpers; always use `DateUtils.toISO(date)` (not `.toISOString()`) to avoid UTC timezone shift bugs
-- `GradeUtils` – grade formatting and ECTS-weighted average calculation
+- `GradeUtils` – grade formatting and average calculation. Key methods: `weightedAverage(subjects)` (ECTS-weighted), `simpleAverage(subjects)` (unweighted), `effectiveGrade(sub)` (computes grade from subGrades average, falls back to `sub.grade`), `gradeClass(grade)`, `format(grade)`
 - `initApp(pageName)` – must be called first in every page JS; injects the navbar, applies the saved theme, and prompts for a name on first visit
 
 Each page JS file calls `initApp('pagename')` as its first line, then runs its own logic.
@@ -32,7 +32,7 @@ All keys are prefixed `sf_` to avoid collisions:
 |-----|-------|
 | `sf_exams` | `[{ id, subject, date }]` |
 | `sf_study_settings` | `{ daysOfWeek: number[], hoursPerDay, weeksBeforeExam }` |
-| `sf_grades` | `[{ id, name, subjects: [{ name, grade, ects }] }]` |
+| `sf_grades` | `[{ id, name, subjects: [{ name, ects, subGrades: [{ id, name, grade }] }] }]` |
 | `sf_timer_settings` | `{ workMinutes, shortBreakMinutes, longBreakMinutes, cyclesBeforeLong }` |
 | `sf_today_stats` | `{ date: string, pomodoros, focusMinutes }` |
 | `sf_profile` | `{ name }` |
@@ -52,6 +52,21 @@ All keys are prefixed `sf_` to avoid collisions:
 - **Entrance animations:** `.anim-up-1` through `.anim-up-5` in `components.css` with staggered 70ms delays. Respect `prefers-reduced-motion`.
 
 `css/components.css` contains shared UI components (navbar, buttons, cards, forms, modal, animations). Page-specific styles live in `<style>` blocks inside each HTML file.
+
+### Noten page (noten.js / noten.html)
+
+Modules are created with name + ECTS only. Grades are never entered directly on a module — they are always computed as the average of its **Prüfungsleistungen** (sub-grades) via `GradeUtils.effectiveGrade()`.
+
+The layout uses **CSS Flexbox** (not `<table>`): each module row is `.subject-row-flex` with fixed-width columns `.col-name (flex:1)`, `.col-note (80px)`, `.col-ects (80px)`, `.col-actions (88px)`. The sub-grades panel (`.sub-grades-row`) is a sibling div that toggles `is-expanded`.
+
+UI state is tracked with module-level JS Sets:
+- `expandedSubjects` – which module rows have their sub-grades panel open (key: `"semIdx-subIdx"`)
+- `editingSubjects` – which module rows are in edit mode
+- `editingSgRows` – which sub-grade rows are in name-edit mode (key: `"semIdx-subIdx-sgIdx"`)
+
+Clicking the pencil button on a module auto-expands its sub-grades panel; clicking the checkmark closes it again. The `.computed-grade` display uses `text-decoration: underline dashed` (not `border-bottom`) to avoid affecting row height.
+
+Both ECTS-weighted and unweighted averages are shown in the summary bar and per semester header, and on the dashboard (`statAvg` / `statAvgSimple`).
 
 ### Study plan algorithm
 
