@@ -112,43 +112,12 @@
     .col-ects .form-input { width: 100%; }
     .col-actions { width: 88px; flex-shrink: 0; display: flex; justify-content: flex-end; gap: var(--sp-2); align-items: center; }
 
-    /* Add subject row */
-    .add-subject-row {
-      display: flex;
-      gap: var(--sp-2);
+
+    /* Zeile mit "Hinzufügen"-Button (Semester / Modul / Prüfungsleistung) */
+    .add-item-row {
       padding: var(--sp-3) var(--sp-4);
       background-color: var(--bg-subtle);
       border-top: 1px solid var(--border-subtle);
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .add-subject-row .form-input {
-      flex: 2;
-      min-width: 120px;
-    }
-
-    .add-subject-row .form-input.narrow {
-      flex: 1;
-      min-width: 80px;
-    }
-
-    /* Add semester form */
-    .add-semester-form {
-      display: flex;
-      gap: var(--sp-3);
-      align-items: flex-end;
-      flex-wrap: wrap;
-      padding: var(--sp-5);
-      background-color: var(--bg-elevated);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--r-lg);
-      margin-bottom: var(--sp-8);
-    }
-
-    .add-semester-form .form-group {
-      flex: 1;
-      min-width: 160px;
     }
 
     /* ── Statische Noten-/ECTS-Anzeige ── */
@@ -288,6 +257,30 @@
       text-underline-offset: 3px;
     }
 
+    /* ── Semester auf-/zuklappen ── */
+    .semester-body.is-collapsed {
+      display: none;
+    }
+
+    .semester-chevron {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      color: var(--fg-3);
+      flex-shrink: 0;
+      transition: transform var(--t-fast), color var(--t-fast);
+    }
+
+    .semester-header:hover .semester-chevron {
+      color: var(--fg);
+    }
+
+    .semester-chevron.expanded {
+      transform: rotate(90deg);
+    }
+
     /* ── Semesterschnitt-Block (ECTS + ungewichtet) ── */
     .sem-avg-block {
       display: flex;
@@ -301,6 +294,24 @@
       align-items: center;
       gap: 1px;
     }
+
+    /* ── Statische Anzeige in Sub-Grade-Zeilen (nicht im Edit-Modus) ── */
+    .sg-static {
+      font-size: var(--text-sm);
+      color: var(--fg-3);
+      padding: 0 var(--sp-1);
+    }
+
+    .sg-static.sg-grade {
+      font-family: 'Eczar', Georgia, serif;
+      font-weight: 700;
+      font-size: var(--text-md);
+      color: var(--fg);
+    }
+
+    .sg-static.sg-grade.grade-good { color: var(--grade-good); }
+    .sg-static.sg-grade.grade-mid  { color: var(--grade-mid);  }
+    .sg-static.sg-grade.grade-bad  { color: var(--grade-bad);  }
 
     .sem-avg-label {
       font-size: 9px;
@@ -324,12 +335,7 @@
     <div class="grade-summary anim-up-2" id="gradeSummary"></div>
 
     <!-- Semester hinzufügen -->
-    <div class="add-semester-form anim-up-3">
-      <div class="form-group">
-        <label class="form-label" for="semesterNameInput">Neues Semester</label>
-        <input class="form-input" type="text" id="semesterNameInput"
-               placeholder="z.B. WS 24/25 oder SoSe 25" maxlength="40" />
-      </div>
+    <div class="anim-up-3" style="display:flex; justify-content:flex-end; margin-bottom:var(--sp-8)">
       <button class="btn btn-primary" id="addSemesterBtn">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
              fill="none" stroke="currentColor" stroke-width="2.5"
@@ -337,7 +343,7 @@
           <line x1="12" y1="5" x2="12" y2="19"/>
           <line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
-        Semester anlegen
+        Neues Semester anlegen
       </button>
     </div>
 

@@ -273,6 +273,54 @@
     .day-detail-dot.today { background-color: var(--accent-on-bg); }
     .day-detail-empty { font-size: var(--text-sm); color: var(--fg-3); }
 
+    /* ── Lernzeit pro Modul ── */
+    .subject-breakdown-row {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      padding: var(--sp-2) 0;
+    }
+
+    .subject-breakdown-row + .subject-breakdown-row {
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .subject-breakdown-name {
+      flex: 1;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--fg);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    .subject-breakdown-bar-wrap {
+      width: 100px;
+      height: 4px;
+      border-radius: var(--r-full);
+      background-color: var(--bg-muted);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .subject-breakdown-bar {
+      height: 100%;
+      border-radius: var(--r-full);
+      background-color: var(--accent-on-bg);
+      transition: width var(--t-base);
+    }
+
+    .subject-breakdown-val {
+      font-size: var(--text-sm);
+      color: var(--fg-2);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      min-width: 88px;
+      text-align: right;
+    }
+
     @media (max-width: 768px) {
       .today-block {
         grid-template-columns: 1fr;
@@ -363,8 +411,29 @@
       </div>
     </div>
 
+    <!-- Lernzeit pro Modul (nur sichtbar wenn heute Daten vorhanden) -->
+    <div id="subjectBreakdown" hidden class="anim-up-4" style="margin-top:var(--sp-8)">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Lernzeit heute</div>
+        </div>
+        <div id="subjectBreakdownList"></div>
+      </div>
+    </div>
+
+    <!-- Lernzeit nach Semester -->
+    <div id="studyHistorySection" class="anim-up-5" style="margin-top:var(--sp-8)">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Lernzeit nach Semester</div>
+          <select class="form-input" id="histSemesterSelect" style="width:auto;min-width:180px"></select>
+        </div>
+        <div id="histModuleList"></div>
+      </div>
+    </div>
+
     <!-- Kalender -->
-    <div class="anim-up-4" style="margin-top: var(--sp-8)">
+    <div class="anim-up-6" style="margin-top: var(--sp-8)">
       <div class="card">
         <div class="calendar-nav">
           <button class="calendar-nav-btn" id="prevMonth" aria-label="Vorheriger Monat">

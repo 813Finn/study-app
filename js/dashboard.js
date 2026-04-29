@@ -95,7 +95,7 @@ function renderTodayStudy() {
 
   // Bereits heute gelernte Minuten pro Fach
   const savedStats  = store.get('sf_today_stats');
-  const todayKey    = new Date().toDateString();
+  const todayKey    = DateUtils.todayISO();
   const bySubject   = (savedStats && savedStats.date === todayKey && savedStats.bySubject)
     ? savedStats.bySubject : {};
 
@@ -342,9 +342,130 @@ document.getElementById('nextMonth').addEventListener('click', () => {
   renderCalendarWidget();
 });
 
+/* ── Lernzeit pro Modul ───────────────────────────────── */
+function renderSubjectStats() {
+  const el = document.getElementById('subjectBreakdown');
+  if (!el) return;
+
+  const todayKey  = DateUtils.todayISO();
+  const saved     = store.get('sf_today_stats');
+  const bySubject = (saved && saved.date === todayKey && saved.bySubject)
+    ? saved.bySubject : {};
+  const entries   = Object.entries(bySubject).filter(([, m]) => m > 0);
+
+  if (!entries.length) {
+    el.hidden = true;
+    return;
+  }
+
+  const maxMins = Math.max(...entries.map(([, m]) => m));
+  el.hidden = false;
+
+  document.getElementById('subjectBreakdownList').innerHTML = entries
+    .sort((a, b) => b[1] - a[1])
+    .map(([subject, mins]) => {
+      const pct = Math.round(mins / maxMins * 100);
+      return `
+        <div class="subject-breakdown-row">
+          <span class="subject-breakdown-name">${escapeHtml(subject)}</span>
+          <div class="subject-breakdown-bar-wrap">
+            <div class="subject-breakdown-bar" style="width:${pct}%"></div>
+          </div>
+          <span class="subject-breakdown-val">${formatMins(mins)}</span>
+        </div>`;
+    }).join('');
+}
+
+/* ── Lernzeit nach Semester ───────────────────────────── */
+function renderStudyHistorySection() {
+  const grades  = store.get('sf_grades') || [];
+  const history = store.get('sf_study_history') || {};
+  const exams   = store.get('sf_exams') || [];
+  const selEl   = document.getElementById('histSemesterSelect');
+  const listEl  = document.getElementById('histModuleList');
+  if (!selEl || !listEl) return;
+
+  // Semester-Optionen befüllen (neueste zuerst, wie auf der Modul-Seite)
+  const prevVal = selEl.value;
+  selEl.innerHTML = grades.length === 0
+    ? '<option value="">Keine Semester vorhanden</option>'
+    : [...grades].reverse().map((sem, revI) => {
+        const origI = grades.length - 1 - revI;
+        return `<option value="${origI}">${escapeHtml(sem.name)}</option>`;
+      }).join('');
+
+  // Vorige Auswahl wiederherstellen, falls noch gültig
+  if (prevVal !== '' && grades[parseInt(prevVal)]) selEl.value = prevVal;
+
+  const semIdx = parseInt(selEl.value);
+  if (isNaN(semIdx) || !grades[semIdx]) {
+    listEl.innerHTML = '<p style="font-size:var(--text-sm);color:var(--fg-3);padding:var(--sp-4) 0">Kein Semester ausgewählt.</p>';
+    return;
+  }
+
+  const semester = grades[semIdx];
+
+  // Heute immer live aus sf_today_stats einbeziehen (history enthält evtl. noch keinen Eintrag)
+  const todayKey   = DateUtils.todayISO();
+  const todayStats = store.get('sf_today_stats');
+  const mergedHistory = { ...history };
+  if (todayStats && todayStats.date === todayKey && todayStats.bySubject) {
+    mergedHistory[todayKey] = todayStats.bySubject;
+  }
+
+  // Gesamtminuten pro Prüfungsleistungs-Subjekt über alle Tage summieren
+  const totalBySubject = {};
+  for (const dayData of Object.values(mergedHistory)) {
+    for (const [subject, mins] of Object.entries(dayData)) {
+      totalBySubject[subject] = (totalBySubject[subject] || 0) + mins;
+    }
+  }
+
+  // Pro Modul alle verknüpften Prüfungsleistungen aufsummieren
+  const moduleData = (semester.subjects || []).map(module => {
+    let totalMins = 0;
+    for (const sg of (module.subGrades || [])) {
+      if (sg.examId) {
+        const exam = exams.find(e => e.id === sg.examId);
+        if (exam && totalBySubject[exam.subject]) {
+          totalMins += totalBySubject[exam.subject];
+        }
+      }
+    }
+    return { name: module.name, mins: totalMins };
+  });
+
+  if (!moduleData.some(m => m.mins > 0)) {
+    listEl.innerHTML = '<p style="font-size:var(--text-sm);color:var(--fg-3);padding:var(--sp-4) 0">Noch keine Lernzeit für dieses Semester erfasst.</p>';
+    return;
+  }
+
+  const maxMins = Math.max(...moduleData.map(m => m.mins));
+  listEl.innerHTML = moduleData
+    .slice()
+    .sort((a, b) => b.mins - a.mins)
+    .filter(m => m.mins > 0)
+    .map(({ name, mins }) => {
+      const pct = Math.round(mins / maxMins * 100);
+      return `
+        <div class="subject-breakdown-row">
+          <span class="subject-breakdown-name">${escapeHtml(name)}</span>
+          <div class="subject-breakdown-bar-wrap">
+            <div class="subject-breakdown-bar" style="width:${pct}%"></div>
+          </div>
+          <span class="subject-breakdown-val">${formatMins(mins)}</span>
+        </div>`;
+    }).join('');
+}
+
 /* ── Init ─────────────────────────────────────────────── */
 renderGreeting();
 renderExamList();
 renderTodayStudy();
 renderGradeAvg();
+renderSubjectStats();
+renderStudyHistorySection();
 renderCalendarWidget();
+
+document.getElementById('histSemesterSelect')
+  .addEventListener('change', renderStudyHistorySection);

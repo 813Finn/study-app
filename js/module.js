@@ -4,12 +4,97 @@
 
 initApp('module');
 
+// Merkt sich welche Semester zugeklappt sind
+const collapsedSemesters = new Set();
 // Merkt sich welche Fach-Zeilen aufgeklappt sind (Key: "semIdx-subIdx")
 const expandedSubjects = new Set();
 // Merkt sich welche Fach-Zeilen im Bearbeitungs-Modus sind
 const editingSubjects = new Set();
 // Merkt sich welche Prüfungsleistungen im Bearbeitungs-Modus sind (Key: "semIdx-subIdx-sgIdx")
 const editingSgRows = new Set();
+
+/* ── Bestätigungs-Dialog ──────────────────────────────── */
+function showDeleteConfirm(message, onConfirm) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop open';
+  backdrop.innerHTML = `
+    <div class="modal" style="max-width:380px">
+      <div class="modal-header">
+        <h2 class="modal-title" style="font-size:var(--text-lg)">Löschen bestätigen</h2>
+      </div>
+      <div class="modal-body">
+        <p style="margin:0; font-size:var(--text-sm); color:var(--fg-2); line-height:1.6">${message}</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="_confirmCancel">Abbrechen</button>
+        <button class="btn btn-danger"    id="_confirmOk">Löschen</button>
+      </div>
+    </div>`;
+  document.body.appendChild(backdrop);
+
+  const close = () => backdrop.remove();
+  backdrop.querySelector('#_confirmOk').addEventListener('click', () => { close(); onConfirm(); });
+  backdrop.querySelector('#_confirmCancel').addEventListener('click', close);
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+}
+
+/* ── Formular-Modal (generisch für alle "Anlegen"-Dialoge) */
+function showFormModal({ title, fields, submitLabel, onSubmit }) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop open';
+
+  const fieldsHTML = fields.map(f => {
+    const optional = !f.required
+      ? `<span style="color:var(--fg-3);font-weight:400"> (optional)</span>` : '';
+    return `
+      <div class="form-group">
+        <label class="form-label" for="_mf_${f.id}">${f.label}${optional}</label>
+        <input class="form-input" type="${f.type}" id="_mf_${f.id}"
+               ${f.placeholder != null ? `placeholder="${f.placeholder}"` : ''}
+               ${f.min         != null ? `min="${f.min}"`                 : ''}
+               ${f.max         != null ? `max="${f.max}"`                 : ''}
+               ${f.step        != null ? `step="${f.step}"`               : ''}
+               ${f.maxlength   != null ? `maxlength="${f.maxlength}"`     : ''}
+               autocomplete="off" />
+      </div>`;
+  }).join('');
+
+  backdrop.innerHTML = `
+    <div class="modal" style="max-width:420px">
+      <div class="modal-header">
+        <h2 class="modal-title">${title}</h2>
+      </div>
+      <div class="modal-body">${fieldsHTML}</div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="_mfCancel">Abbrechen</button>
+        <button class="btn btn-primary"   id="_mfSubmit">${submitLabel || 'Hinzufügen'}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(backdrop);
+
+  setTimeout(() => { backdrop.querySelector('.form-input')?.focus(); }, 60);
+
+  const close = () => backdrop.remove();
+
+  const submit = () => {
+    const values = {};
+    for (const f of fields) {
+      const input = backdrop.querySelector(`#_mf_${f.id}`);
+      const val   = input.value.trim();
+      if (f.required && !val) { input.focus(); return; }
+      values[f.id] = val;
+    }
+    close();
+    onSubmit(values);
+  };
+
+  backdrop.querySelector('#_mfSubmit').addEventListener('click', submit);
+  backdrop.querySelector('#_mfCancel').addEventListener('click', close);
+  backdrop.querySelectorAll('.form-input').forEach(inp =>
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); })
+  );
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+}
 
 /* ── HTML escapen ─────────────────────────────────────── */
 function escapeHtml(str) {
@@ -128,20 +213,25 @@ function renderSubGradesRow(sub, semIdx, subIdx) {
       ? `<button class="btn btn-secondary btn-sm" data-done-sg="${semIdx},${subIdx},${sgIdx}" title="Fertig">${ICON_CHECK}</button>`
       : `<button class="btn btn-secondary btn-sm" data-edit-sg="${semIdx},${subIdx},${sgIdx}" title="Name bearbeiten">${ICON_PENCIL}</button>`;
 
+    const hasGrade = sg.grade !== '' && sg.grade != null;
+    const dateContent = sgEditing
+      ? `<input class="form-input" type="date" value="${sg.examDate || ''}"
+               data-sg-date="${semIdx},${subIdx},${sgIdx}"
+               aria-label="Klausurdatum für ${escapeHtml(sg.name)}" />`
+      : `<span class="sg-static">${sg.examDate ? DateUtils.formatShort(sg.examDate) : '–'}</span>`;
+
+    const gradeContent = sgEditing
+      ? `<input class="form-input" type="number" value="${sg.grade || ''}"
+               placeholder="Note" min="1" max="5" step="0.1"
+               data-sg-sem="${semIdx}" data-sg-sub="${subIdx}" data-sg-idx="${sgIdx}"
+               aria-label="Note für ${escapeHtml(sg.name)}" />`
+      : `<span class="sg-static${hasGrade ? ' sg-grade ' + GradeUtils.gradeClass(Number(sg.grade)) : ''}">${hasGrade ? GradeUtils.format(Number(sg.grade)) : '–'}</span>`;
+
     return `
       <div class="sg-row">
         <div class="sg-col-name">${nameContent}</div>
-        <div class="sg-col-date">
-          <input class="form-input" type="date" value="${sg.examDate || ''}"
-                 data-sg-date="${semIdx},${subIdx},${sgIdx}"
-                 aria-label="Klausurdatum für ${escapeHtml(sg.name)}" />
-        </div>
-        <div class="sg-col-note">
-          <input class="form-input" type="number" value="${sg.grade || ''}"
-                 placeholder="Note" min="1" max="5" step="0.1"
-                 data-sg-sem="${semIdx}" data-sg-sub="${subIdx}" data-sg-idx="${sgIdx}"
-                 aria-label="Note für ${escapeHtml(sg.name)}" />
-        </div>
+        <div class="sg-col-date">${dateContent}</div>
+        <div class="sg-col-note">${gradeContent}</div>
         <div class="sg-col-actions">
           ${sgActionBtn}
           <button class="btn btn-danger btn-sm" data-del-sg="${semIdx},${subIdx},${sgIdx}"
@@ -151,24 +241,8 @@ function renderSubGradesRow(sub, semIdx, subIdx) {
   }).join('');
 
   const addRow = `
-    <div class="sg-row sg-add-row">
-      <div class="sg-col-name">
-        <input class="form-input" type="text"
-               placeholder="Prüfungsname" maxlength="80"
-               data-new-sg-name="${key}" style="flex:1; min-width:0" />
-      </div>
-      <div class="sg-col-date">
-        <input class="form-input" type="date"
-               data-new-sg-date="${key}" />
-      </div>
-      <div class="sg-col-note">
-        <input class="form-input" type="number"
-               placeholder="Note" min="1" max="5" step="0.1"
-               data-new-sg-grade="${key}" />
-      </div>
-      <div class="sg-col-actions">
-        <button class="btn btn-secondary btn-sm" data-add-sg="${semIdx},${subIdx}">+ Leistung</button>
-      </div>
+    <div class="add-item-row">
+      <button class="btn btn-secondary btn-sm" data-add-sg="${semIdx},${subIdx}">+ Neue Prüfungsleistung</button>
     </div>`;
 
   return `
@@ -196,10 +270,11 @@ function renderSemesters() {
 
   // Neueste Semester oben – semIdx bleibt der echte Array-Index für alle Datenoperationen
   listEl.innerHTML = grades.map((sem, semIdx) => {
-    const subjects = sem.subjects || [];
+    const subjects    = sem.subjects || [];
     const weightedAvg = GradeUtils.weightedAverage(subjects);
     const simpleAvg   = GradeUtils.simpleAverage(subjects);
-    const semEcts = subjects.reduce((sum, s) => sum + (Number(s.ects) || 0), 0);
+    const semEcts     = subjects.reduce((sum, s) => sum + (Number(s.ects) || 0), 0);
+    const isCollapsed = collapsedSemesters.has(semIdx);
 
     const items = subjects.map((sub, subIdx) => {
       const key = `${semIdx}-${subIdx}`;
@@ -259,8 +334,9 @@ function renderSemesters() {
 
     return `
       <div class="semester-block" id="sem-${semIdx}">
-        <div class="semester-header" data-toggle="${semIdx}">
+        <div class="semester-header" data-toggle="${semIdx}" aria-expanded="${!isCollapsed}">
           <div class="semester-header-left">
+            <span class="semester-chevron${isCollapsed ? '' : ' expanded'}" aria-hidden="true">${ICON_CHEVRON}</span>
             <span class="semester-name">${escapeHtml(sem.name)}</span>
             <span class="badge badge-neutral">${semEcts} ECTS · ${subjects.length} Module</span>
           </div>
@@ -281,7 +357,7 @@ function renderSemesters() {
             </button>
           </div>
         </div>
-        <div class="semester-body">
+        <div class="semester-body${isCollapsed ? ' is-collapsed' : ''}">
           <div class="subjects-list">
             <div class="subjects-header">
               <div class="col-name">Modul</div>
@@ -294,16 +370,8 @@ function renderSemesters() {
                         </div>`}
           </div>
           <!-- Modul hinzufügen -->
-          <div class="add-subject-row">
-            <input class="form-input" type="text"
-                   placeholder="Modulname" maxlength="80"
-                   data-new-sub-name="${semIdx}" />
-            <input class="form-input narrow" type="number"
-                   placeholder="ECTS" min="1" max="30" step="1"
-                   data-new-sub-ects="${semIdx}" />
-            <button class="btn btn-secondary btn-sm" data-add-sub="${semIdx}">
-              + Modul
-            </button>
+          <div class="add-item-row">
+            <button class="btn btn-secondary btn-sm" data-add-sub="${semIdx}">+ Neues Modul</button>
           </div>
         </div>
       </div>`;
@@ -442,18 +510,23 @@ function attachListeners() {
       const [semIdx, subIdx] = btn.dataset.delSub.split(',').map(Number);
       const grades = getGrades();
       const sub    = grades[semIdx]?.subjects[subIdx];
-      const sgIds  = (sub?.subGrades || []).map(sg => sg.examId).filter(Boolean);
-      if (sgIds.length) {
-        const exams = (store.get('sf_exams') || []).filter(e => !sgIds.includes(e.id));
-        store.set('sf_exams', exams);
-      }
-      grades[semIdx].subjects.splice(subIdx, 1);
-      expandedSubjects.clear();
-      editingSubjects.clear();
-      editingSgRows.clear();
-      saveGrades(grades);
-      renderSummary();
-      renderSemesters();
+      showDeleteConfirm(
+        `Modul <strong>${escapeHtml(sub?.name || '')}</strong> wirklich löschen?<br>Alle Prüfungsleistungen werden ebenfalls entfernt.`,
+        () => {
+          const sgIds = (sub?.subGrades || []).map(sg => sg.examId).filter(Boolean);
+          if (sgIds.length) {
+            const exams = (store.get('sf_exams') || []).filter(e => !sgIds.includes(e.id));
+            store.set('sf_exams', exams);
+          }
+          grades[semIdx].subjects.splice(subIdx, 1);
+          expandedSubjects.clear();
+          editingSubjects.clear();
+          editingSgRows.clear();
+          saveGrades(grades);
+          renderSummary();
+          renderSemesters();
+        }
+      );
     });
   });
 
@@ -463,98 +536,100 @@ function attachListeners() {
       e.stopPropagation();
       const semIdx = parseInt(btn.dataset.delSem);
       const grades = getGrades();
-      if (!confirm(`Semester "${grades[semIdx]?.name}" wirklich löschen?`)) return;
-      const allSgIds = (grades[semIdx]?.subjects || [])
-        .flatMap(s => (s.subGrades || []).map(sg => sg.examId))
-        .filter(Boolean);
-      if (allSgIds.length) {
-        const exams = (store.get('sf_exams') || []).filter(e => !allSgIds.includes(e.id));
-        store.set('sf_exams', exams);
-      }
-      grades.splice(semIdx, 1);
-      expandedSubjects.clear();
-      editingSubjects.clear();
-      editingSgRows.clear();
-      saveGrades(grades);
-      renderSummary();
-      renderSemesters();
+      showDeleteConfirm(
+        `Semester <strong>${escapeHtml(grades[semIdx]?.name || '')}</strong> wirklich löschen?<br>Alle Module und Prüfungsleistungen werden entfernt.`,
+        () => {
+          const allSgIds = (grades[semIdx]?.subjects || [])
+            .flatMap(s => (s.subGrades || []).map(sg => sg.examId))
+            .filter(Boolean);
+          if (allSgIds.length) {
+            const exams = (store.get('sf_exams') || []).filter(e => !allSgIds.includes(e.id));
+            store.set('sf_exams', exams);
+          }
+          grades.splice(semIdx, 1);
+          expandedSubjects.clear();
+          editingSubjects.clear();
+          editingSgRows.clear();
+          saveGrades(grades);
+          renderSummary();
+          renderSemesters();
+        }
+      );
     });
   });
 
-  // Modul hinzufügen (kein Datum mehr nötig – kommt über Prüfungsleistungen)
+  // Modul hinzufügen
   document.querySelectorAll('[data-add-sub]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const semIdx    = parseInt(btn.dataset.addSub);
-      const nameInput = document.querySelector(`[data-new-sub-name="${semIdx}"]`);
-      const ectsInput = document.querySelector(`[data-new-sub-ects="${semIdx}"]`);
-
-      const name = nameInput.value.trim();
-      const ects = ectsInput.value ? parseInt(ectsInput.value) : '';
-
-      if (!name) { nameInput.focus(); return; }
-
-      const grades = getGrades();
-      if (!grades[semIdx]) return;
-
-      grades[semIdx].subjects.push({
-        name,
-        ects:      (ects !== '' && ects > 0) ? ects : '',
-        subGrades: [],
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const semIdx = parseInt(btn.dataset.addSub);
+      showFormModal({
+        title: 'Neues Modul',
+        fields: [
+          { id: 'name', label: 'Modulname', type: 'text', placeholder: 'z.B. Analysis I', required: true, maxlength: 80 },
+          { id: 'ects', label: 'ECTS', type: 'number', placeholder: 'z.B. 6', required: false, min: 1, max: 30, step: 1 },
+        ],
+        submitLabel: 'Modul hinzufügen',
+        onSubmit: ({ name, ects }) => {
+          const grades = getGrades();
+          if (!grades[semIdx]) return;
+          const ectsNum = ects ? parseInt(ects) : '';
+          grades[semIdx].subjects.push({
+            name,
+            ects:      (ectsNum !== '' && ectsNum > 0) ? ectsNum : '',
+            subGrades: [],
+          });
+          saveGrades(grades);
+          renderSummary();
+          renderSemesters();
+        },
       });
-
-      nameInput.value = '';
-      ectsInput.value = '';
-      saveGrades(grades);
-      renderSummary();
-      renderSemesters();
     });
   });
 
-  // Teilleistung hinzufügen (mit optionalem Datum → sf_exams)
+  // Teilleistung hinzufügen
   document.querySelectorAll('[data-add-sg]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const [semIdx, subIdx] = btn.dataset.addSg.split(',').map(Number);
-      const key        = `${semIdx}-${subIdx}`;
-      const nameInput  = document.querySelector(`[data-new-sg-name="${key}"]`);
-      const dateInput  = document.querySelector(`[data-new-sg-date="${key}"]`);
-      const gradeInput = document.querySelector(`[data-new-sg-grade="${key}"]`);
+      const key = `${semIdx}-${subIdx}`;
+      showFormModal({
+        title: 'Neue Prüfungsleistung',
+        fields: [
+          { id: 'name',  label: 'Prüfungsname', type: 'text',   placeholder: 'z.B. Klausur WS 24/25', required: true, maxlength: 80 },
+          { id: 'date',  label: 'Klausurdatum', type: 'date',   required: false },
+          { id: 'grade', label: 'Note',          type: 'number', placeholder: 'z.B. 1,7', required: false, min: 1, max: 5, step: 0.1 },
+        ],
+        submitLabel: 'Prüfungsleistung hinzufügen',
+        onSubmit: ({ name, date, grade }) => {
+          const grades = getGrades();
+          const sub    = grades[semIdx]?.subjects[subIdx];
+          if (!sub) return;
+          if (!sub.subGrades) sub.subGrades = [];
 
-      const name     = nameInput.value.trim();
-      const examDate = dateInput?.value || '';
-      const grade    = gradeInput.value ? parseFloat(gradeInput.value.replace(',', '.')) : '';
+          let examId = null;
+          if (date) {
+            examId = `exam_sg_${Date.now()}`;
+            const exams = store.get('sf_exams') || [];
+            exams.push({ id: examId, subject: `${sub.name} – ${name}`, date });
+            store.set('sf_exams', exams);
+          }
 
-      if (!name) { nameInput.focus(); return; }
+          const gradeNum = grade ? parseFloat(grade.replace(',', '.')) : '';
+          sub.subGrades.push({
+            id:       `sg_${Date.now()}`,
+            name,
+            grade:    (gradeNum !== '' && gradeNum >= 1 && gradeNum <= 5) ? gradeNum : '',
+            examDate: date || '',
+            examId,
+          });
 
-      const grades = getGrades();
-      const sub    = grades[semIdx]?.subjects[subIdx];
-      if (!sub) return;
-      if (!sub.subGrades) sub.subGrades = [];
-
-      let examId = null;
-      if (examDate) {
-        examId = `exam_sg_${Date.now()}`;
-        const exams = store.get('sf_exams') || [];
-        exams.push({ id: examId, subject: `${sub.name} – ${name}`, date: examDate });
-        store.set('sf_exams', exams);
-      }
-
-      sub.subGrades.push({
-        id: `sg_${Date.now()}`,
-        name,
-        grade:    (grade !== '' && grade >= 1 && grade <= 5) ? grade : '',
-        examDate,
-        examId,
+          expandedSubjects.add(key);
+          saveGrades(grades);
+          renderSummary();
+          renderSemesters();
+        },
       });
-
-      nameInput.value = '';
-      if (dateInput) dateInput.value = '';
-      gradeInput.value = '';
-
-      expandedSubjects.add(key);
-      saveGrades(grades);
-      renderSummary();
-      renderSemesters();
     });
   });
 
@@ -568,16 +643,21 @@ function attachListeners() {
       const sub    = grades[semIdx]?.subjects[subIdx];
       if (!sub || !sub.subGrades) return;
       const sg = sub.subGrades[sgIdx];
-      if (sg?.examId) {
-        const exams = (store.get('sf_exams') || []).filter(e => e.id !== sg.examId);
-        store.set('sf_exams', exams);
-      }
-      sub.subGrades.splice(sgIdx, 1);
-      editingSgRows.clear();
-      if (sub.subGrades.length > 0) expandedSubjects.add(key);
-      saveGrades(grades);
-      renderSummary();
-      renderSemesters();
+      showDeleteConfirm(
+        `Prüfungsleistung <strong>${escapeHtml(sg?.name || '')}</strong> wirklich löschen?`,
+        () => {
+          if (sg?.examId) {
+            const exams = (store.get('sf_exams') || []).filter(e => e.id !== sg.examId);
+            store.set('sf_exams', exams);
+          }
+          sub.subGrades.splice(sgIdx, 1);
+          editingSgRows.clear();
+          if (sub.subGrades.length > 0) expandedSubjects.add(key);
+          saveGrades(grades);
+          renderSummary();
+          renderSemesters();
+        }
+      );
     });
   });
 }
@@ -656,25 +736,38 @@ document.getElementById('semesterList').addEventListener('click', (e) => {
     renderSemesters();
     return;
   }
+
+  // Semester-Header → auf-/zuklappen
+  const semHeader = e.target.closest('[data-toggle]');
+  if (semHeader) {
+    e.stopPropagation();
+    const semIdx = parseInt(semHeader.dataset.toggle);
+    if (collapsedSemesters.has(semIdx)) {
+      collapsedSemesters.delete(semIdx);
+    } else {
+      collapsedSemesters.add(semIdx);
+    }
+    renderSemesters();
+    return;
+  }
 });
 
 /* ── Semester hinzufügen ──────────────────────────────── */
 document.getElementById('addSemesterBtn').addEventListener('click', () => {
-  const input = document.getElementById('semesterNameInput');
-  const name  = input.value.trim();
-  if (!name) { input.focus(); return; }
-
-  const grades = getGrades();
-  grades.push({ id: `sem_${Date.now()}`, name, subjects: [] });
-  saveGrades(grades);
-  input.value = '';
-
-  renderSummary();
-  renderSemesters();
-});
-
-document.getElementById('semesterNameInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') document.getElementById('addSemesterBtn').click();
+  showFormModal({
+    title: 'Neues Semester',
+    fields: [
+      { id: 'name', label: 'Semestername', type: 'text', placeholder: 'z.B. WS 24/25 oder SoSe 25', required: true, maxlength: 40 },
+    ],
+    submitLabel: 'Semester anlegen',
+    onSubmit: ({ name }) => {
+      const grades = getGrades();
+      grades.push({ id: `sem_${Date.now()}`, name, subjects: [] });
+      saveGrades(grades);
+      renderSummary();
+      renderSemesters();
+    },
+  });
 });
 
 /* ── Init ─────────────────────────────────────────────── */

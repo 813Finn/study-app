@@ -733,10 +733,11 @@
 .anim-up-3 { animation: animUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 140ms both; }
 .anim-up-4 { animation: animUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 210ms both; }
 .anim-up-5 { animation: animUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 280ms both; }
+.anim-up-6 { animation: animUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 350ms both; }
 
 @media (prefers-reduced-motion: reduce) {
   .anim-up,
-  .anim-up-1, .anim-up-2, .anim-up-3, .anim-up-4, .anim-up-5 {
+  .anim-up-1, .anim-up-2, .anim-up-3, .anim-up-4, .anim-up-5, .anim-up-6 {
     animation: none;
   }
 }

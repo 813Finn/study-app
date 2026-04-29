@@ -41,7 +41,7 @@ let totalTime       = settings.workMinutes * 60;
 let isRunning       = false;
 let intervalId      = null;
 let cyclesDone      = 0;        // Abgeschlossene Pomodoros in diesem Zyklus
-let todayKey        = new Date().toDateString();
+let todayKey        = DateUtils.todayISO();
 let selectedSubject = '';       // Aktuell gewähltes Fach (leer = kein Fach)
 
 /* ── Minuten lesbar formatieren ───────────────────────── */
@@ -78,8 +78,7 @@ function renderSubjectProgress() {
     el.textContent = `✓ Heute erledigt (${formatMins(studiedMins)} gelernt)`;
   } else {
     el.classList.remove('done');
-    const studiedPart = studiedMins > 0 ? ` · ${formatMins(studiedMins)} bereits gelernt` : '';
-    el.textContent = `Noch ${formatMins(remainingMins)} für heute${studiedPart}`;
+    el.textContent = `Noch ${formatMins(remainingMins)} für heute`;
   }
 }
 
@@ -107,17 +106,21 @@ function renderSubjectSelector() {
 
 /* ── Tageszähler ──────────────────────────────────────── */
 function getTodayStats() {
+  todayKey = DateUtils.todayISO(); // Tageswechsel auch bei offener Seite erkennen
   const saved = store.get('sf_today_stats');
   if (!saved || saved.date !== todayKey) {
     return { date: todayKey, pomodoros: 0, focusMinutes: 0, bySubject: {} };
   }
-  // Ältere Einträge ohne bySubject absichern
   if (!saved.bySubject) saved.bySubject = {};
   return saved;
 }
 
 function saveTodayStats(stats) {
   store.set('sf_today_stats', stats);
+  // Kumulierte History für die Semester-Lernzeit-Ansicht im Dashboard
+  const history = store.get('sf_study_history') || {};
+  history[stats.date] = { ...(stats.bySubject || {}) };
+  store.set('sf_study_history', history);
 }
 
 function renderTodayStats() {
@@ -127,6 +130,34 @@ function renderTodayStats() {
   const m = stats.focusMinutes % 60;
   document.getElementById('statFocusTime').textContent =
     h > 0 ? `${h} h ${m} Min` : `${m} Min`;
+  renderModuleTimeCard();
+}
+
+function renderModuleTimeCard() {
+  const card  = document.getElementById('moduleTimeCard');
+  const label = document.getElementById('moduleTimeLabel');
+  const value = document.getElementById('moduleTimeValue');
+  if (!card) return;
+
+  if (!selectedSubject) {
+    card.hidden = true;
+    return;
+  }
+
+  // Modulname = Teil vor " – " (z.B. "Analysis – Klausur" → "Analysis")
+  const moduleName = selectedSubject.includes(' – ')
+    ? selectedSubject.split(' – ')[0]
+    : selectedSubject;
+
+  // Alle Teilleistungen dieses Moduls aus heutigen Stats summieren
+  const bySubject  = getTodayStats().bySubject || {};
+  const moduleMins = Object.entries(bySubject)
+    .filter(([key]) => key === selectedSubject || key.startsWith(moduleName + ' – '))
+    .reduce((sum, [, mins]) => sum + mins, 0);
+
+  label.textContent = `Lernzeit heute für ${moduleName}`;
+  value.textContent = moduleMins > 0 ? formatMins(moduleMins) : '0 Min';
+  card.hidden = false;
 }
 
 /* ── Zeitanzeige ──────────────────────────────────────── */
@@ -379,6 +410,7 @@ document.getElementById('applySettings').addEventListener('click', () => {
 document.getElementById('subjectSelect').addEventListener('change', (e) => {
   selectedSubject = e.target.value;
   renderSubjectProgress();
+  renderModuleTimeCard();
 });
 
 /* ── Einstellungen-Inputs vorbelegen ──────────────────── */
@@ -397,3 +429,4 @@ renderSubjectSelector();
 renderSubjectProgress();
 switchToPhase('work');
 renderTodayStats();
+renderModuleTimeCard();
