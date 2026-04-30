@@ -323,6 +323,15 @@ function tick() {
 /* ── Start / Stop ─────────────────────────────────────── */
 function startTimer() {
   if (isRunning) return;
+  if (currentPhase === 'work' && !selectedSubject) {
+    const wrap = document.querySelector('.subject-selector');
+    document.getElementById('subjectHint').hidden = false;
+    wrap.classList.remove('shake');
+    void wrap.offsetWidth; // reflow zum Neustart der Animation
+    wrap.classList.add('shake');
+    wrap.addEventListener('animationend', () => wrap.classList.remove('shake'), { once: true });
+    return;
+  }
   isRunning  = true;
   intervalId = setInterval(tick, 1000);
   updateUI();
@@ -409,6 +418,7 @@ document.getElementById('applySettings').addEventListener('click', () => {
 // Fach-Selektor Änderung
 document.getElementById('subjectSelect').addEventListener('change', (e) => {
   selectedSubject = e.target.value;
+  if (selectedSubject) document.getElementById('subjectHint').hidden = true;
   renderSubjectProgress();
   renderModuleTimeCard();
 });

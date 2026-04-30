@@ -398,6 +398,22 @@
       color: var(--grade-good);
     }
 
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-6px); }
+      40%       { transform: translateX(6px); }
+      60%       { transform: translateX(-4px); }
+      80%       { transform: translateX(4px); }
+    }
+    .subject-selector.shake { animation: shake 0.35s ease; }
+
+    .subject-hint {
+      margin-top: var(--sp-2);
+      font-size: var(--text-sm);
+      color: var(--fg-3);
+      text-align: center;
+    }
+
     @media (max-width: 480px) {
       .settings-body.open {
         grid-template-columns: 1fr;
@@ -437,6 +453,7 @@
         <option value="">– Kein Fach ausgewählt –</option>
       </select>
       <div class="subject-progress" id="subjectProgress"></div>
+      <div class="subject-hint" id="subjectHint" hidden>Fach wählen um zu starten</div>
     </div>
 
     <!-- Phase-Auswahl -->

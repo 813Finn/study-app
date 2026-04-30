@@ -154,25 +154,16 @@ const ICON_TRASH = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="1
 function renderSummary() {
   const grades = getGrades();
   const allSubjects = grades.flatMap(sem => sem.subjects || []);
-  const totalEcts = allSubjects.reduce((sum, s) => sum + (Number(s.ects) || 0), 0);
   const totalSubjects = allSubjects.filter(s => GradeUtils.effectiveGrade(s) !== null).length;
-  const overallWeighted = GradeUtils.weightedAverage(allSubjects);
-  const overallSimple   = GradeUtils.simpleAverage(allSubjects);
+  const overallSimple = GradeUtils.simpleAverage(allSubjects);
 
   document.getElementById('gradeSummary').innerHTML = `
-    <div class="stat-card">
-      <div class="stat-label">Gesamtschnitt</div>
-      <div class="stat-value ${GradeUtils.gradeClass(overallWeighted)}">
-        ${GradeUtils.format(overallWeighted)}
-      </div>
-      <div class="stat-sub">ECTS-gewichtet</div>
-    </div>
     <div class="stat-card">
       <div class="stat-label">Gesamtschnitt</div>
       <div class="stat-value ${GradeUtils.gradeClass(overallSimple)}">
         ${GradeUtils.format(overallSimple)}
       </div>
-      <div class="stat-sub">Ungewichtet (Ø)</div>
+      <div class="stat-sub">Notenschnitt (Ø)</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Semester</div>
@@ -183,11 +174,6 @@ function renderSummary() {
       <div class="stat-label">Fächer benotet</div>
       <div class="stat-value">${totalSubjects}</div>
       <div class="stat-sub">von ${allSubjects.length} gesamt</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">ECTS gesamt</div>
-      <div class="stat-value">${totalEcts}</div>
-      <div class="stat-sub">Kreditpunkte</div>
     </div>`;
 }
 
@@ -242,7 +228,7 @@ function renderSubGradesRow(sub, semIdx, subIdx) {
 
   const addRow = `
     <div class="add-item-row">
-      <button class="btn btn-secondary btn-sm" data-add-sg="${semIdx},${subIdx}">+ Neue Prüfungsleistung</button>
+      <button class="btn btn-primary btn-sm" data-add-sg="${semIdx},${subIdx}">+ Neue Prüfungsleistung</button>
     </div>`;
 
   return `
@@ -271,9 +257,8 @@ function renderSemesters() {
   // Neueste Semester oben – semIdx bleibt der echte Array-Index für alle Datenoperationen
   listEl.innerHTML = grades.map((sem, semIdx) => {
     const subjects    = sem.subjects || [];
-    const weightedAvg = GradeUtils.weightedAverage(subjects);
-    const simpleAvg   = GradeUtils.simpleAverage(subjects);
-    const semEcts     = subjects.reduce((sum, s) => sum + (Number(s.ects) || 0), 0);
+    const simpleAvg = GradeUtils.simpleAverage(subjects);
+    const semEcts   = subjects.reduce((sum, s) => sum + (Number(s.ects) || 0), 0);
     const isCollapsed = collapsedSemesters.has(semIdx);
 
     const items = subjects.map((sub, subIdx) => {
@@ -343,10 +328,6 @@ function renderSemesters() {
           <div style="display:flex; align-items:center; gap:var(--sp-4)">
             <div class="sem-avg-block">
               <div class="sem-avg-item">
-                <span class="sem-avg-label">ECTS</span>
-                <span class="semester-avg ${GradeUtils.gradeClass(weightedAvg)}">${GradeUtils.format(weightedAvg)}</span>
-              </div>
-              <div class="sem-avg-item">
                 <span class="sem-avg-label">Ø</span>
                 <span class="semester-avg ${GradeUtils.gradeClass(simpleAvg)}">${GradeUtils.format(simpleAvg)}</span>
               </div>
@@ -371,7 +352,7 @@ function renderSemesters() {
           </div>
           <!-- Modul hinzufügen -->
           <div class="add-item-row">
-            <button class="btn btn-secondary btn-sm" data-add-sub="${semIdx}">+ Neues Modul</button>
+            <button class="btn btn-primary btn-sm" data-add-sub="${semIdx}">+ Neues Modul</button>
           </div>
         </div>
       </div>`;

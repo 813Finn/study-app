@@ -54,19 +54,9 @@ function renderExamList() {
   listEl.innerHTML = upcoming.map(exam => {
     const days = DateUtils.diffDays(exam.date);
     let urgencyClass = '';
-    let daysLabel = '';
-    if (days <= 0) {
-      urgencyClass = 'urgent';
-      daysLabel = 'Heute!';
-    } else if (days <= 7) {
-      urgencyClass = 'urgent';
-      daysLabel = days === 1 ? 'Morgen' : `${days} Tage`;
-    } else if (days <= 14) {
-      urgencyClass = 'soon';
-      daysLabel = `${days} Tage`;
-    } else {
-      daysLabel = `${days} Tage`;
-    }
+    if (days <= 0)       urgencyClass = 'urgent';
+    else if (days <= 7)  urgencyClass = 'urgent';
+    else if (days <= 14) urgencyClass = 'soon';
 
     return `
       <div class="exam-item">
@@ -76,7 +66,7 @@ function renderExamList() {
         </div>
         <div class="flex-1">
           <div class="list-item-title">${escapeHtml(exam.subject)}</div>
-          <div class="list-item-sub">${DateUtils.formatShort(exam.date)} · ${daysLabel}</div>
+          <div class="list-item-sub">${DateUtils.formatShort(exam.date)}</div>
         </div>
       </div>`;
   }).join('');
@@ -84,66 +74,41 @@ function renderExamList() {
 
 /* ── Heutiger Lernplan ────────────────────────────────── */
 function renderTodayStudy() {
-  const settings = store.get('sf_study_settings') || {
-    daysOfWeek: [1, 2, 3, 4, 5],
-    hoursPerDay: 2,
-    weeksBeforeExam: 4,
-  };
-  const exams    = store.get('sf_exams') || [];
-  const todayISO = DateUtils.todayISO();
-  const todayDow = new Date().getDay();
+  const examPlans = store.get('sf_exam_plans') || {};
+  const exams     = store.get('sf_exams') || [];
+  const todayISO  = DateUtils.todayISO();
+  const todayDow  = new Date().getDay();
 
-  // Bereits heute gelernte Minuten pro Fach
-  const savedStats  = store.get('sf_today_stats');
-  const todayKey    = DateUtils.todayISO();
-  const bySubject   = (savedStats && savedStats.date === todayKey && savedStats.bySubject)
+  const savedStats = store.get('sf_today_stats');
+  const bySubject  = (savedStats && savedStats.date === todayISO && savedStats.bySubject)
     ? savedStats.bySubject : {};
-
-  const plannedMinsPerExam = settings.hoursPerDay * 60;
 
   const todayItems = [];
 
-  if (settings.daysOfWeek.includes(todayDow)) {
-    const examsNeedingStudy = exams.filter(e => {
-      const days = DateUtils.diffDays(e.date);
-      return days >= 0 && days <= settings.weeksBeforeExam * 7;
-    });
+  exams.forEach(exam => {
+    const days = DateUtils.diffDays(exam.date);
 
-    examsNeedingStudy.forEach(exam => {
-      const days           = DateUtils.diffDays(exam.date);
-      const studiedMins    = bySubject[exam.subject] || 0;
-      const remainingMins  = Math.max(0, plannedMinsPerExam - studiedMins);
-
-      if (days === 0) {
-        todayItems.push({ subject: exam.subject, type: 'exam', info: 'Klausur heute!', remainingMins: 0 });
-      } else {
-        const remainingStr = remainingMins === 0
-          ? `Heute erledigt · noch ${days} ${days === 1 ? 'Tag' : 'Tage'}`
-          : `${formatMins(remainingMins)} noch heute · ${days} ${days === 1 ? 'Tag' : 'Tage'}`;
-        todayItems.push({ subject: exam.subject, type: 'study', info: remainingStr, remainingMins });
-      }
-    });
-  }
-
-  // Klausuren die heute stattfinden (auch wenn kein Lerntag)
-  exams.filter(e => e.date === todayISO).forEach(exam => {
-    if (!todayItems.find(i => i.subject === exam.subject && i.type === 'exam')) {
-      todayItems.push({ subject: exam.subject, type: 'exam', info: 'Klausur heute!', remainingMins: 0 });
+    if (days === 0) {
+      todayItems.push({ subject: exam.subject, type: 'exam' });
+      return;
     }
+    if (days < 0) return;
+
+    const plan = examPlans[exam.id];
+    if (!plan || !plan.weeklyHours || !plan.weeklyHours[todayDow]) return;
+    const plannedMins = plan.weeklyHours[todayDow] * 60;
+    if (plannedMins <= 0) return;
+
+    const studiedMins   = bySubject[exam.subject] || 0;
+    const remainingMins = Math.max(0, plannedMins - studiedMins);
+    todayItems.push({ subject: exam.subject, type: 'study', plannedMins, studiedMins, remainingMins, days });
   });
 
-  // Stat: verbleibende Lernstunden heute
-  const totalRemainingMins = todayItems
-    .filter(i => i.type === 'study')
-    .reduce((sum, i) => sum + i.remainingMins, 0);
-  const statVal = totalRemainingMins >= 60
-    ? (totalRemainingMins / 60).toFixed(1).replace(/\.0$/, '')
-    : totalRemainingMins > 0 ? `${totalRemainingMins}m` : '0';
-  document.getElementById('statToday').textContent = statVal;
+  const totalRemainingMins = todayItems.filter(i => i.type === 'study').reduce((s, i) => s + i.remainingMins, 0);
+  const focusMins = (savedStats && savedStats.date === todayISO) ? (savedStats.focusMinutes || 0) : 0;
 
-  // Stat: bereits gelernte Zeit heute (aus Timer-Daten)
-  const focusMins = (savedStats && savedStats.date === todayKey) ? (savedStats.focusMinutes || 0) : 0;
   document.getElementById('statTodayDone').textContent = formatMins(focusMins);
+  document.getElementById('statToday').textContent     = formatMins(totalRemainingMins);
 
   const listEl = document.getElementById('todayStudyList');
 
@@ -156,20 +121,23 @@ function renderTodayStudy() {
     return;
   }
 
-  listEl.innerHTML = todayItems.map(item => `
-    <div class="study-item">
-      <div class="study-item-dot ${item.type === 'exam' ? 'exam' : ''}"></div>
-      <div class="study-item-text">
+  listEl.innerHTML = todayItems.map(item => {
+    if (item.type === 'exam') {
+      return `
+        <div class="study-item">
+          <div class="study-item-title">${escapeHtml(item.subject)}</div>
+          <div class="study-item-meta">Prüfung heute!</div>
+        </div>`;
+    }
+    const isDone = item.remainingMins === 0;
+    return `
+      <div class="study-item">
         <div class="study-item-title">${escapeHtml(item.subject)}</div>
-        <div class="study-item-meta">${item.info}</div>
-      </div>
-      ${item.type === 'study'
-        ? item.remainingMins > 0
-          ? `<a href="timer.html?subject=${encodeURIComponent(item.subject)}" class="btn btn-ghost btn-sm">Start</a>`
-          : `<span class="badge badge-good">Fertig</span>`
-        : `<span class="badge badge-bad">Heute</span>`
-      }
-    </div>`).join('');
+        ${isDone
+          ? `<span class="badge badge-good" style="display:inline-flex;align-items:center;gap:4px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Fertig</span>`
+          : `<div class="study-item-meta">${formatMins(item.remainingMins)} übrig</div>`}
+      </div>`;
+  }).join('');
 }
 
 /* ── Minuten lesbar formatieren (z.B. "1 Std 30 Min") ── */
@@ -186,16 +154,141 @@ function formatMins(mins) {
 function renderGradeAvg() {
   const grades = store.get('sf_grades') || [];
   const allSubjects = grades.flatMap(sem => sem.subjects || []);
-  const weightedAvg = GradeUtils.weightedAverage(allSubjects);
-  const simpleAvg   = GradeUtils.simpleAverage(allSubjects);
+  const simpleAvg = GradeUtils.simpleAverage(allSubjects);
 
   const el = document.getElementById('statAvg');
-  el.textContent = GradeUtils.format(weightedAvg);
-  el.className = `stat-value ${GradeUtils.gradeClass(weightedAvg)}`;
+  el.textContent = GradeUtils.format(simpleAvg);
+  el.className = `grade-avg-value ${GradeUtils.gradeClass(simpleAvg)}`;
+}
 
-  const el2 = document.getElementById('statAvgSimple');
-  el2.textContent = GradeUtils.format(simpleAvg);
-  el2.className = `stat-value ${GradeUtils.gradeClass(simpleAvg)}`;
+/* ── Nächste Klausur Hero ─────────────────────────────── */
+function renderNextExamHero() {
+  const exams = (store.get('sf_exams') || [])
+    .filter(e => e.date >= DateUtils.todayISO())
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const heroEl = document.getElementById('nextExamHero');
+  if (!exams.length) { heroEl.hidden = true; return; }
+
+  const exam = exams[0];
+  const days = DateUtils.diffDays(exam.date);
+  if (days > 30) { heroEl.hidden = true; return; }
+
+  heroEl.hidden = false;
+
+  const urgency = days <= 7 ? 'urgent' : days <= 14 ? 'soon' : '';
+  const countdownEl = document.getElementById('heroCountdown');
+  countdownEl.textContent = days === 0 ? 'Heute' : days;
+  countdownEl.className = `hero-countdown${urgency ? ' ' + urgency : ''}`;
+
+  document.getElementById('heroMeta').textContent =
+    days === 0 ? 'Klausur heute' : `Nächste Klausur · in ${days} ${days === 1 ? 'Tag' : 'Tagen'}`;
+  document.getElementById('heroSubject').textContent = exam.subject;
+  document.getElementById('heroDate').textContent = DateUtils.formatShort(exam.date);
+}
+
+/* ── Motivations-Zitat ────────────────────────────────── */
+const QUOTES = [
+  { text: 'Bildung ist nicht das Füllen eines Eimers, sondern das Entzünden eines Feuers.', author: 'W. B. Yeats' },
+  { text: 'Investiere in Wissen – es zahlt die besten Zinsen.', author: 'Benjamin Franklin' },
+  { text: 'Die Wurzel der Bildung ist bitter, aber ihre Früchte sind süß.', author: 'Aristoteles' },
+  { text: 'Lernen ist ein Schatz, der seinem Träger überall folgt.', author: 'Chinesisches Sprichwort' },
+  { text: 'Wer aufhört zu lernen, ist alt. Wer weiter lernt, bleibt jung.', author: 'Henry Ford' },
+  { text: 'Der Geist ist kein Gefäß, das gefüllt, sondern ein Feuer, das entfacht werden will.', author: 'Plutarch' },
+  { text: 'Disziplin ist die Brücke zwischen Zielen und Leistung.', author: 'Jim Rohn' },
+  { text: 'Lernen ohne zu denken ist verlorene Zeit. Denken ohne zu lernen ist eine Gefahr.', author: 'Konfuzius' },
+  { text: 'Bildung ist das, was übrig bleibt, wenn man alles Gelernte vergessen hat.', author: 'B. F. Skinner' },
+  { text: 'Der einzige Weg, großartige Arbeit zu leisten, ist, das zu lieben, was man tut.', author: 'Steve Jobs' },
+  { text: 'Kleine Schritte jeden Tag führen zu großen Ergebnissen.', author: '' },
+  { text: 'Heute gelernt ist morgen gewonnen.', author: '' },
+];
+
+function renderQuote() {
+  const idx = Math.floor(Date.now() / 86400000) % QUOTES.length;
+  const q   = QUOTES[idx];
+  const el  = document.getElementById('quoteCard');
+  if (!el) return;
+  el.innerHTML = `
+    <p class=”quote-text”>${escapeHtml(q.text)}</p>
+    ${q.author ? `<span class="quote-author">— ${escapeHtml(q.author)}</span>` : ''}`;
+}
+
+/* ── Wochenübersicht ──────────────────────────────────── */
+function renderWeekBar() {
+  const barEl = document.getElementById('weekBar');
+  if (!barEl) return;
+
+  const today      = new Date();
+  const todayISO   = DateUtils.todayISO();
+  const dow        = (today.getDay() + 6) % 7; // 0 = Mo
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dow);
+
+  const exams      = store.get('sf_exams') || [];
+  const history    = store.get('sf_study_history') || {};
+  const todayStats = store.get('sf_today_stats');
+  const studyDays  = computeStudyDays(exams);
+  const examDates  = new Set(exams.map(e => e.date));
+
+  const LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+  barEl.innerHTML = LABELS.map((label, i) => {
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate() + i);
+    const iso = DateUtils.toISO(date);
+
+    let status = 'free';
+    if (examDates.has(iso)) {
+      status = 'exam';
+    } else {
+      let mins = 0;
+      if (history[iso]) mins = Object.values(history[iso]).reduce((s, m) => s + m, 0);
+      if (iso === todayISO && todayStats && todayStats.date === todayISO)
+        mins = Math.max(mins, todayStats.focusMinutes || 0);
+      if (mins > 0)            status = 'done';
+      else if (studyDays.has(iso)) status = 'planned';
+    }
+
+    const isToday = iso === todayISO;
+    const dayNum  = date.getDate();
+    return `
+      <div class="week-chip ${status}${isToday ? ' is-today' : ''}">
+        <span class="week-chip-day">${label}</span>
+        <span class="week-chip-date">${dayNum}</span>
+        <span class="week-chip-dot"></span>
+      </div>`;
+  }).join('');
+}
+
+/* ── Lernstreak ───────────────────────────────────────── */
+function renderStreak() {
+  const history    = store.get('sf_study_history') || {};
+  const todayStats = store.get('sf_today_stats');
+  const todayISO   = DateUtils.todayISO();
+  const todayMins  = (todayStats && todayStats.date === todayISO)
+    ? (todayStats.focusMinutes || 0) : 0;
+
+  let streak = 0;
+  const cur  = new Date(DateUtils.today());
+  if (todayMins === 0) cur.setDate(cur.getDate() - 1);
+
+  while (true) {
+    const iso = DateUtils.toISO(cur);
+    let mins  = 0;
+    if (iso === todayISO) {
+      mins = todayMins;
+    } else if (history[iso]) {
+      mins = Object.values(history[iso]).reduce((s, m) => s + m, 0);
+    }
+    if (mins === 0) break;
+    streak++;
+    cur.setDate(cur.getDate() - 1);
+  }
+
+  document.getElementById('streakValue').textContent = streak;
+  document.getElementById('streakSub').textContent   = streak === 0
+    ? 'Heute starten!'
+    : streak === 1 ? 'Tag in Folge' : 'Tage in Folge';
 }
 
 /* ── HTML escapen ─────────────────────────────────────── */
@@ -213,17 +306,21 @@ let calMonth = new Date().getMonth();
 
 const CAL_DAYS_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
-function computeStudyDays(exams, settings) {
-  const studySet = new Set();
-  const todayISO = DateUtils.todayISO();
+function computeStudyDays(exams) {
+  const examPlans = store.get('sf_exam_plans') || {};
+  const studySet  = new Set();
+  const todayISO  = DateUtils.todayISO();
+
   exams.forEach(exam => {
     if (exam.date < todayISO) return;
-    const examDate  = DateUtils.fromISO(exam.date);
-    const startDate = new Date(examDate);
-    startDate.setDate(startDate.getDate() - settings.weeksBeforeExam * 7);
-    const cur = new Date(startDate > DateUtils.today() ? startDate : DateUtils.today());
+    const examDate = DateUtils.fromISO(exam.date);
+    const plan     = examPlans[exam.id];
+    if (!plan || !plan.weeklyHours || Object.keys(plan.weeklyHours).length === 0) return;
+
+    const daysOfWeek = Object.keys(plan.weeklyHours).map(Number);
+    const cur = new Date(DateUtils.today());
     while (cur < examDate) {
-      if (settings.daysOfWeek.includes(cur.getDay())) studySet.add(DateUtils.toISO(cur));
+      if (daysOfWeek.includes(cur.getDay())) studySet.add(DateUtils.toISO(cur));
       cur.setDate(cur.getDate() + 1);
     }
   });
@@ -232,9 +329,8 @@ function computeStudyDays(exams, settings) {
 
 function renderCalendarWidget() {
   const exams    = store.get('sf_exams') || [];
-  const settings = store.get('sf_study_settings') || { daysOfWeek: [1,2,3,4,5], hoursPerDay: 2, weeksBeforeExam: 4 };
   const examDates = new Set(exams.map(e => e.date));
-  const studyDays = computeStudyDays(exams, settings);
+  const studyDays = computeStudyDays(exams);
   const todayISO  = DateUtils.todayISO();
 
   document.getElementById('calMonthLabel').textContent = DateUtils.formatMonth(calYear, calMonth);
@@ -278,12 +374,12 @@ function renderCalendarWidget() {
     if (studyDays.has(iso) && !examDates.has(iso)) dots.push('<span class="cal-dot study"></span>');
     if (dots.length) el.insertAdjacentHTML('beforeend', `<div class="dot-row">${dots.join('')}</div>`);
 
-    el.addEventListener('click', () => showDayDetail(iso, exams, settings, studyDays));
+    el.addEventListener('click', () => showDayDetail(iso, exams, studyDays));
     grid.appendChild(el);
   }
 }
 
-function showDayDetail(iso, exams, settings, studyDays) {
+function showDayDetail(iso, exams, studyDays) {
   document.querySelectorAll('.cal-day.selected').forEach(d => d.classList.remove('selected'));
   const activeDay = document.querySelector(`.cal-day[data-iso="${iso}"]`);
   if (activeDay) activeDay.classList.add('selected');
@@ -291,31 +387,26 @@ function showDayDetail(iso, exams, settings, studyDays) {
   const detail    = document.getElementById('dayDetail');
   const dateEl    = document.getElementById('dayDetailDate');
   const contentEl = document.getElementById('dayDetailContent');
-  const todayISO  = DateUtils.todayISO();
 
   dateEl.textContent = DateUtils.formatLong(iso);
   detail.hidden = false;
 
-  const items       = [];
-  const examsOnDay  = exams.filter(e => e.date === iso);
+  const items      = [];
+  const examsOnDay = exams.filter(e => e.date === iso);
   examsOnDay.forEach(e => items.push({ type: 'exam', text: `Klausur: ${e.subject}` }));
 
   if (studyDays.has(iso) && !examsOnDay.length) {
-    const activeExams = exams.filter(e => {
-      const examDate  = DateUtils.fromISO(e.date);
-      const startDate = new Date(examDate);
-      startDate.setDate(startDate.getDate() - settings.weeksBeforeExam * 7);
-      const isoDate = DateUtils.fromISO(iso);
-      return isoDate >= startDate && isoDate < examDate;
+    const examPlans = store.get('sf_exam_plans') || {};
+    const dow       = DateUtils.fromISO(iso).getDay();
+    const selectedDate = DateUtils.fromISO(iso);
+
+    exams.filter(e => iso < e.date).forEach(e => {
+      const plan = examPlans[e.id];
+      if (!plan || !plan.weeklyHours || !plan.weeklyHours[dow]) return;
+      const examDate = DateUtils.fromISO(e.date);
+      const daysLeft = Math.ceil((examDate - selectedDate) / (1000 * 60 * 60 * 24));
+      items.push({ type: 'study', text: `${e.subject} · noch ${daysLeft} ${daysLeft === 1 ? 'Tag' : 'Tage'}` });
     });
-    if (activeExams.length) {
-      activeExams.forEach(e => {
-        const daysLeft = DateUtils.diffDays(e.date);
-        items.push({ type: 'study', text: `Lernen für: ${e.subject} · ${settings.hoursPerDay} Std (noch ${daysLeft} ${daysLeft === 1 ? 'Tag' : 'Tage'})` });
-      });
-    } else {
-      items.push({ type: 'study', text: `Lerntag · ${settings.hoursPerDay} Stunden geplant` });
-    }
   }
 
   if (!items.length) {
@@ -329,6 +420,16 @@ function showDayDetail(iso, exams, settings, studyDays) {
       <span>${escapeHtml(item.text)}</span>
     </div>`).join('');
 }
+
+document.getElementById('todayBtn').addEventListener('click', () => {
+  const now = new Date();
+  calYear  = now.getFullYear();
+  calMonth = now.getMonth();
+  renderCalendarWidget();
+  const exams     = store.get('sf_exams') || [];
+  const studyDays = computeStudyDays(exams);
+  showDayDetail(DateUtils.todayISO(), exams, studyDays);
+});
 
 document.getElementById('prevMonth').addEventListener('click', () => {
   calMonth--;
@@ -458,14 +559,67 @@ function renderStudyHistorySection() {
     }).join('');
 }
 
+/* ── Lernzeit diese Woche ─────────────────────────────── */
+function renderWeeklySummary() {
+  const rowsEl  = document.getElementById('weeklySummaryRows');
+  const totalEl = document.getElementById('weeklySummaryTotal');
+  if (!rowsEl) return;
+
+  const todayISO   = DateUtils.todayISO();
+  const today      = new Date();
+  const dow        = (today.getDay() + 6) % 7;
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dow);
+
+  const history    = store.get('sf_study_history') || {};
+  const todayStats = store.get('sf_today_stats');
+  const LABELS     = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+  const days = LABELS.map((label, i) => {
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate() + i);
+    const iso = DateUtils.toISO(date);
+    let mins = history[iso] ? Object.values(history[iso]).reduce((s, m) => s + m, 0) : 0;
+    if (iso === todayISO && todayStats && todayStats.date === todayISO)
+      mins = Math.max(mins, todayStats.focusMinutes || 0);
+    return { label, mins, isToday: iso === todayISO, isFuture: iso > todayISO };
+  });
+
+  const maxMins  = Math.max(...days.map(d => d.mins), 1);
+  const totalMins = days.reduce((s, d) => s + d.mins, 0);
+
+  rowsEl.innerHTML = days.map(d => `
+    <div class="weekly-summary-row${d.isToday ? ' is-today' : ''}">
+      <span class="weekly-summary-day">${d.label}</span>
+      <div class="weekly-summary-bar-wrap">
+        ${d.mins > 0 ? `<div class="weekly-summary-bar" style="width:${Math.round(d.mins / maxMins * 100)}%"></div>` : ''}
+      </div>
+      <span class="weekly-summary-val">${d.mins > 0 ? formatMins(d.mins) : d.isFuture ? '' : '–'}</span>
+    </div>`).join('');
+
+  totalEl.textContent = totalMins > 0 ? formatMins(totalMins) : '0 Min';
+}
+
 /* ── Init ─────────────────────────────────────────────── */
 renderGreeting();
+renderNextExamHero();
+renderQuote();
 renderExamList();
 renderTodayStudy();
+renderWeekBar();
 renderGradeAvg();
 renderSubjectStats();
 renderStudyHistorySection();
+renderStreak();
+renderWeeklySummary();
 renderCalendarWidget();
+
+// Heutigen Tag im Kalender vorauswählen
+{
+  const exams     = store.get('sf_exams') || [];
+  const studyDays = computeStudyDays(exams);
+  showDayDetail(DateUtils.todayISO(), exams, studyDays);
+}
 
 document.getElementById('histSemesterSelect')
   .addEventListener('change', renderStudyHistorySection);
