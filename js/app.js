@@ -75,7 +75,7 @@ function buildNavbarHTML(activePage) {
   return `
     <nav class="navbar" id="navbar">
       <div class="navbar-inner">
-        <a href="index.html" class="navbar-brand">Study<span>Flow</span></a>
+        <div class="navbar-brand"></div>
         <div class="navbar-links">${linksHTML}</div>
         <div class="navbar-actions">
           <div class="profile-wrapper" id="profileWrapper">
@@ -342,17 +342,7 @@ const GradeUtils = {
     return (sub.grade !== '' && sub.grade != null) ? Number(sub.grade) : null;
   },
 
-  // ECTS-gewichteter Durchschnitt
-  weightedAverage(subjects) {
-    const withGrade = subjects.filter(s => GradeUtils.effectiveGrade(s) !== null && s.ects);
-    if (!withGrade.length) return null;
-    const totalEcts = withGrade.reduce((sum, s) => sum + Number(s.ects), 0);
-    if (!totalEcts) return null;
-    const weighted  = withGrade.reduce((sum, s) => sum + GradeUtils.effectiveGrade(s) * Number(s.ects), 0);
-    return weighted / totalEcts;
-  },
-
-  // Ungewichteter Durchschnitt (alle Fächer gleich gewichtet)
+  // Durchschnitt (alle Fächer gleich gewichtet)
   simpleAverage(subjects) {
     const valid = subjects.filter(s => GradeUtils.effectiveGrade(s) !== null);
     if (!valid.length) return null;
