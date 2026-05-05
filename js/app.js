@@ -287,7 +287,7 @@ function openNameModal(isFirstVisit = false) {
 /* ── App initialisieren ───────────────────────────────── */
 function initApp(activePage = 'dashboard') {
   applyTheme(getInitialTheme());
-  if (window.location.hash.includes('type=recovery')) {
+  if (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite')) {
     window.location.replace('reset-password.html' + window.location.hash);
     window.appReady = new Promise(() => {});
     return window.appReady;
