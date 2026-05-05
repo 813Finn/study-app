@@ -15,9 +15,11 @@ const store = {
   },
   set(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
+    syncKey(key, value).catch(console.error);
   },
   remove(key) {
     localStorage.removeItem(key);
+    removeKey(key).catch(console.error);
   },
 };
 
@@ -92,7 +94,7 @@ function buildNavbarHTML(activePage) {
             <div class="profile-dropdown" id="profileDropdown" role="menu">
               <div class="dropdown-header">
                 <span class="dropdown-user-name" id="dropdownUserName">–</span>
-                <span class="dropdown-user-sub">Mein Profil</span>
+                <span class="dropdown-user-sub" id="dropdownUserEmail">–</span>
               </div>
               <div class="dropdown-divider"></div>
               <div class="theme-row">
@@ -128,6 +130,8 @@ function buildNavbarHTML(activePage) {
               </div>
               <div class="dropdown-divider"></div>
               <button class="dropdown-item" id="editNameBtn">Name ändern</button>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item" id="logoutBtn" style="color:var(--grade-bad)">Abmelden</button>
             </div>
           </div>
         </div>
@@ -143,7 +147,7 @@ function buildNameModalHTML() {
         <div class="modal-header">
           <h2 class="modal-title" id="nameModalTitle">Wie heißt du?</h2>
           <p style="margin-top: 0.5rem; font-size: var(--text-sm); color: var(--fg-3); max-width: none;">
-            Dein Name wird lokal gespeichert und nur in der App angezeigt.
+            Dein Anzeigename in der App.
           </p>
         </div>
         <div class="modal-body">
@@ -195,21 +199,31 @@ function initNavbar(activePage) {
     openNameModal();
   });
 
+  // Abmelden
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await supabaseClient.auth.signOut();
+    Object.keys(localStorage).filter(k => k.startsWith('sf_')).forEach(k => localStorage.removeItem(k));
+    window.location.replace('login.html');
+  });
+
   updateProfileUI();
 }
 
 /* ── Profil-UI aktualisieren ──────────────────────────── */
 function updateProfileUI() {
   const profile = getProfile();
-  const name = profile.name || 'Profil';
+  const email   = window._supabaseUser?.email || '';
+  const name    = profile.name || email.split('@')[0] || 'Profil';
 
   const avatarEl       = document.getElementById('profileAvatar');
   const nameEl         = document.getElementById('profileNameEl');
   const dropdownNameEl = document.getElementById('dropdownUserName');
+  const emailEl        = document.getElementById('dropdownUserEmail');
 
-  if (avatarEl)       avatarEl.textContent       = getFirstLetter(name);
-  if (nameEl)         nameEl.textContent          = name;
-  if (dropdownNameEl) dropdownNameEl.textContent  = name;
+  if (avatarEl)       avatarEl.textContent      = getFirstLetter(name);
+  if (nameEl)         nameEl.textContent         = name;
+  if (dropdownNameEl) dropdownNameEl.textContent = name;
+  if (emailEl)        emailEl.textContent        = email;
 }
 
 /* ── Name-Modal ───────────────────────────────────────── */
@@ -272,17 +286,29 @@ function openNameModal(isFirstVisit = false) {
 
 /* ── App initialisieren ───────────────────────────────── */
 function initApp(activePage = 'dashboard') {
-  // Theme sofort anwenden (vor dem ersten Paint)
   applyTheme(getInitialTheme());
+  window.appReady = _initAppAsync(activePage);
+  return window.appReady;
+}
 
-  // Navbar rendern
+async function _initAppAsync(activePage) {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if (!session) {
+    if (!window.location.pathname.endsWith('login.html')) {
+      window.location.replace('login.html');
+      await new Promise(() => {});
+    }
+    return;
+  }
+
+  window._supabaseUser = session.user;
+  await loadUserData();
+  applyTheme(getInitialTheme());
   initNavbar(activePage);
 
-  // Beim ersten Besuch: Namen abfragen
   const profile = getProfile();
-  if (!profile.name) {
-    setTimeout(() => openNameModal(true), 300);
-  }
+  if (!profile.name) setTimeout(() => openNameModal(true), 300);
 }
 
 /* ── Datum-Utilities ──────────────────────────────────── */

@@ -601,25 +601,24 @@ function renderWeeklySummary() {
 }
 
 /* ── Init ─────────────────────────────────────────────── */
-renderGreeting();
-renderNextExamHero();
-renderQuote();
-renderExamList();
-renderTodayStudy();
-renderWeekBar();
-renderGradeAvg();
-renderSubjectStats();
-renderStudyHistorySection();
-renderStreak();
-renderWeeklySummary();
-renderCalendarWidget();
+window.appReady.then(() => {
+  renderGreeting();
+  renderNextExamHero();
+  renderQuote();
+  renderExamList();
+  renderTodayStudy();
+  renderWeekBar();
+  renderGradeAvg();
+  renderSubjectStats();
+  renderStudyHistorySection();
+  renderStreak();
+  renderWeeklySummary();
+  renderCalendarWidget();
 
-// Heutigen Tag im Kalender vorauswählen
-{
   const exams     = store.get('sf_exams') || [];
   const studyDays = computeStudyDays(exams);
   showDayDetail(DateUtils.todayISO(), exams, studyDays);
-}
 
-document.getElementById('histSemesterSelect')
-  .addEventListener('change', renderStudyHistorySection);
+  document.getElementById('histSemesterSelect')
+    .addEventListener('change', renderStudyHistorySection);
+});

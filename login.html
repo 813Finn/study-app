@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anmelden – StudyApp</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--sp-8);
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-logo {
+      font-family: 'Eczar', Georgia, serif;
+      font-size: var(--text-3xl);
+      font-weight: 800;
+      color: var(--fg);
+      margin-bottom: var(--sp-1);
+    }
+
+    .login-sub {
+      font-size: var(--text-sm);
+      color: var(--fg-3);
+      margin-bottom: var(--sp-8);
+    }
+
+    .login-tabs {
+      display: flex;
+      gap: var(--sp-1);
+      margin-bottom: var(--sp-6);
+      background: var(--bg-subtle);
+      padding: var(--sp-1);
+      border-radius: var(--r-md);
+    }
+
+    .login-tab {
+      flex: 1;
+      padding: var(--sp-2) var(--sp-4);
+      border-radius: calc(var(--r-md) - 2px);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--fg-3);
+      transition: background-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
+    }
+
+    .login-tab.active {
+      background: var(--bg-elevated);
+      color: var(--fg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .login-error {
+      font-size: var(--text-sm);
+      color: var(--grade-bad);
+      margin-top: var(--sp-3);
+      display: none;
+    }
+
+    .login-error.visible { display: block; }
+
+    .login-info {
+      font-size: var(--text-sm);
+      color: var(--cal-study);
+      margin-top: var(--sp-3);
+      display: none;
+    }
+
+    .login-info.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="login-card card anim-up-1">
+    <div class="login-logo">StudyApp</div>
+    <p class="login-sub">Dein persönlicher Lernbegleiter</p>
+
+    <div class="login-tabs">
+      <button class="login-tab active" id="tabLogin">Anmelden</button>
+      <button class="login-tab" id="tabSignup">Registrieren</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="emailInput">E-Mail</label>
+      <input class="form-input" type="email" id="emailInput"
+             placeholder="name@beispiel.de" autocomplete="email" />
+    </div>
+
+    <div class="form-group" style="margin-top: var(--sp-4)">
+      <label class="form-label" for="passwordInput">Passwort</label>
+      <input class="form-input" type="password" id="passwordInput"
+             placeholder="Mindestens 6 Zeichen" autocomplete="current-password" />
+    </div>
+
+    <p class="login-error" id="loginError"></p>
+    <p class="login-info"  id="loginInfo"></p>
+
+    <button class="btn btn-primary" id="submitBtn" style="width:100%;margin-top:var(--sp-6)">
+      Anmelden
+    </button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

@@ -441,20 +441,26 @@ document.getElementById('subjectSelect').addEventListener('change', (e) => {
   renderModuleTimeCard();
 });
 
-/* ── Einstellungen-Inputs vorbelegen ──────────────────── */
-document.getElementById('setWork').value    = settings.workMinutes;
-document.getElementById('setShort').value   = settings.shortBreakMinutes;
-document.getElementById('setLong').value    = settings.longBreakMinutes;
-document.getElementById('setCycles').value  = settings.cyclesBeforeLong;
-
 /* ── Init ─────────────────────────────────────────────── */
-// URL-Parameter ?subject=... auslesen (z.B. vom Dashboard-Start-Button)
-const _urlParams = new URLSearchParams(window.location.search);
-const _paramSubject = _urlParams.get('subject');
-if (_paramSubject) selectedSubject = _paramSubject;
+window.appReady.then(() => {
+  // Settings aus Supabase-Daten neu laden
+  settings  = loadTimerSettings();
+  timeLeft  = settings.workMinutes * 60;
+  totalTime = settings.workMinutes * 60;
 
-renderSubjectSelector();
-renderSubjectProgress();
-switchToPhase('work');
-renderTodayStats();
-renderModuleTimeCard();
+  document.getElementById('setWork').value   = settings.workMinutes;
+  document.getElementById('setShort').value  = settings.shortBreakMinutes;
+  document.getElementById('setLong').value   = settings.longBreakMinutes;
+  document.getElementById('setCycles').value = settings.cyclesBeforeLong;
+
+  // URL-Parameter ?subject=... auslesen (z.B. vom Dashboard-Start-Button)
+  const urlParams   = new URLSearchParams(window.location.search);
+  const paramSubject = urlParams.get('subject');
+  if (paramSubject) selectedSubject = paramSubject;
+
+  renderSubjectSelector();
+  renderSubjectProgress();
+  switchToPhase('work');
+  renderTodayStats();
+  renderModuleTimeCard();
+});

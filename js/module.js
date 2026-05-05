@@ -752,5 +752,7 @@ document.getElementById('addSemesterBtn').addEventListener('click', () => {
 });
 
 /* ── Init ─────────────────────────────────────────────── */
-renderSummary();
-renderSemesters();
+window.appReady.then(() => {
+  renderSummary();
+  renderSemesters();
+});

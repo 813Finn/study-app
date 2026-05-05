@@ -195,4 +195,4 @@ function render() {
   attachCardListeners(container);
 }
 
-render();
+window.appReady.then(() => render());
