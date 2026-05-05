@@ -35,8 +35,7 @@ function renderExamList() {
   // Nur zukünftige, sortiert
   const upcoming = exams
     .filter(e => e.date >= todayISO)
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(0, 4);
+    .sort((a, b) => a.date.localeCompare(b.date));
 
   document.getElementById('statExams').textContent = upcoming.length;
 
@@ -130,13 +129,14 @@ function renderTodayStudy() {
         </div>`;
     }
     const isDone = item.remainingMins === 0;
+    const href = `timer.html?subject=${encodeURIComponent(item.subject)}`;
     return `
-      <div class="study-item">
+      <a href="${href}" class="study-item" style="text-decoration:none">
         <div class="study-item-title">${escapeHtml(item.subject)}</div>
         ${isDone
           ? `<span class="badge badge-good" style="display:inline-flex;align-items:center;gap:4px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Fertig</span>`
           : `<div class="study-item-meta">${formatMins(item.remainingMins)} übrig</div>`}
-      </div>`;
+      </a>`;
   }).join('');
 }
 

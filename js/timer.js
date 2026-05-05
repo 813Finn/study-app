@@ -54,6 +54,19 @@ function formatMins(mins) {
   return `${m} Min`;
 }
 
+/* ── Geplante Minuten für ein Fach heute ──────────────── */
+function getPlannedMinsForSubject(subject) {
+  const exams      = store.get('sf_exams') || [];
+  const examPlans  = store.get('sf_exam_plans') || {};
+  const todayISO   = DateUtils.todayISO();
+  const todayDow   = new Date().getDay();
+  const exam = exams.find(e => e.subject === subject && e.date >= todayISO);
+  if (!exam) return 0;
+  const plan = examPlans[exam.id];
+  if (!plan || !plan.weeklyHours) return 0;
+  return (plan.weeklyHours[todayDow] || 0) * 60;
+}
+
 /* ── Verbleibende Zeit für gewähltes Fach anzeigen ────── */
 function renderSubjectProgress() {
   const el = document.getElementById('subjectProgress');
@@ -65,11 +78,10 @@ function renderSubjectProgress() {
     return;
   }
 
-  const studySettings  = store.get('sf_study_settings') || { hoursPerDay: 2 };
-  const plannedMins    = studySettings.hoursPerDay * 60;
-  const stats          = getTodayStats();
-  const studiedMins    = (stats.bySubject && stats.bySubject[selectedSubject]) || 0;
-  const remainingMins  = Math.max(0, plannedMins - studiedMins);
+  const plannedMins   = getPlannedMinsForSubject(selectedSubject);
+  const stats         = getTodayStats();
+  const studiedMins   = (stats.bySubject && stats.bySubject[selectedSubject]) || 0;
+  const remainingMins = Math.max(0, plannedMins - studiedMins);
 
   el.style.display = 'block';
 
@@ -87,16 +99,22 @@ function renderSubjectSelector() {
   const sel = document.getElementById('subjectSelect');
   if (!sel) return;
 
-  const exams    = store.get('sf_exams') || [];
-  const todayISO = DateUtils.todayISO();
+  const exams      = store.get('sf_exams') || [];
+  const examPlans  = store.get('sf_exam_plans') || {};
+  const todayISO   = DateUtils.todayISO();
+  const todayDow   = new Date().getDay();
 
-  // Alle noch nicht vergangenen Klausuren, alphabetisch nach Datum sortiert
-  const upcoming = exams
-    .filter(e => e.date >= todayISO)
+  // Nur Fächer mit Lernzeit für heute
+  const todaySubjects = exams
+    .filter(e => {
+      if (e.date < todayISO) return false;
+      const plan = examPlans[e.id];
+      return plan && plan.weeklyHours && (plan.weeklyHours[todayDow] || 0) > 0;
+    })
     .sort((a, b) => a.date.localeCompare(b.date));
 
   sel.innerHTML = `<option value="">– Kein Fach ausgewählt –</option>` +
-    upcoming.map(e =>
+    todaySubjects.map(e =>
       `<option value="${escapeHtml(e.subject)}">${escapeHtml(e.subject)} (${DateUtils.formatShort(e.date)})</option>`
     ).join('');
 
@@ -201,7 +219,7 @@ function updateUI() {
   playBtn.setAttribute('aria-label', isRunning ? 'Pausieren' : 'Starten');
 
   // Dokument-Titel
-  document.title = `${formatTime(timeLeft)} – ${PHASE_LABELS[currentPhase]} · StudyFlow`;
+  document.title = `${formatTime(timeLeft)} – ${PHASE_LABELS[currentPhase]}`;
 
   // Phase-Tabs
   document.querySelectorAll('.phase-tab').forEach(tab => {

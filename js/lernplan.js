@@ -40,11 +40,10 @@ function getStudiedMinutes(examSubject) {
   return total;
 }
 
-/* ── Geplante Minuten von morgen bis Klausurtag ─────────── */
+/* ── Geplante Minuten ab heute bis Klausurtag ───────────── */
 function computeRemainingMinutes(weeklyHours, examDate) {
   const examD = DateUtils.fromISO(examDate);
   const cur   = new Date(DateUtils.today());
-  cur.setDate(cur.getDate() + 1);
 
   let total = 0;
   while (cur < examD) {
@@ -111,8 +110,6 @@ function renderExamCard(exam, plan, animIdx) {
         </div>`;
     }
   }
-  const todayHTML = '';
-
   const noPlanHint = !hasPlan
     ? `<p class="no-plan-hint">Noch kein Lernplan – wähle deine Lerntage unten.</p>` : '';
 
@@ -126,7 +123,6 @@ function renderExamCard(exam, plan, animIdx) {
       </div>
       ${noPlanHint}
       ${progressHTML}
-      ${todayHTML}
       <div class="form-group">
         <label class="form-label">Wochentage &amp; Stunden</label>
         <div class="weekday-row">${renderWeekdayRow(exam.id, weeklyHours)}</div>

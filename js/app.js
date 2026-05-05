@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   StudyFlow – Globale App-Logik
+   Globale App-Logik
    Läuft auf jeder Seite: Theme, Navbar, Profil, localStorage
 ═══════════════════════════════════════════════════════════ */
 

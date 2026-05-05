@@ -20,7 +20,7 @@ No build step — open `index.html` directly or `npx serve .`.
 |-----|-------|
 | `sf_exams` | `[{ id, subject, date }]` |
 | `sf_grades` | `[{ id, name, subjects: [{ name, ects, subGrades: [{ id, name, grade, examDate, examId }] }] }]` |
-| `sf_study_settings` | `{ daysOfWeek: number[], hoursPerDay, weeksBeforeExam }` |
+| `sf_exam_plans` | `{ [examId]: { weeklyHours: { [dow]: hours } } }` – Lernplan pro Prüfung |
 | `sf_timer_settings` | `{ workMinutes, shortBreakMinutes, longBreakMinutes, cyclesBeforeLong }` |
 | `sf_today_stats` | `{ date, pomodoros, focusMinutes, bySubject: { [subject]: minutes } }` |
 | `sf_study_history` | `{ [dateISO]: { [subject]: minutes } }` – kumuliert über alle Tage |
@@ -39,8 +39,8 @@ No build step — open `index.html` directly or `npx serve .`.
 
 **Module:** Grades always computed from sub-grades via `GradeUtils.effectiveGrade()`, never entered directly. Semesters render newest-first (reversed HTML, but `semIdx` = original array index). UI state: `collapsedSemesters`, `expandedSubjects`, `editingSubjects`, `editingSgRows` (Sets). Creation via `showFormModal()`, deletion via `showDeleteConfirm()`. Date/grade fields only editable when pencil is active.
 
-**Dashboard:** `computeStudyDays()` builds study-day Set for the calendar. "Lernzeit heute" reads `sf_today_stats`. "Lernzeit nach Semester" aggregates `sf_study_history` + live-merges today's `sf_today_stats` (in case history not written yet); maps subjects to modules via `subGrade.examId → sf_exams`.
+**Dashboard:** `computeStudyDays()` builds study-day Set for the calendar. "Lernzeit heute" reads `sf_today_stats`. "Lernzeit nach Semester" aggregates `sf_study_history` + live-merges today's `sf_today_stats` (in case history not written yet); maps subjects to modules via `subGrade.examId → sf_exams`. Study items in the "Lernplan" card are links to `timer.html?subject=...`.
 
-**Lernplan:** Read/write only for `sf_study_settings`. No dynamic rendering – fields load on page init, save on button click.
+**Lernplan:** Reads `sf_exams` for upcoming exams, reads/writes `sf_exam_plans` (per-exam weekly schedule). `computeRemainingMinutes()` counts planned hours from today (inclusive) until the exam day.
 
-**Timer:** Pomodoro state in-memory only. Completing a work phase writes to both `sf_today_stats` and `sf_study_history`. Subject pre-selectable via `?subject=` URL param.
+**Timer:** Pomodoro state in-memory only. Completing a work phase writes to both `sf_today_stats` and `sf_study_history`. Subject selector shows only subjects with planned time today (from `sf_exam_plans`). Subject pre-selectable via `?subject=` URL param (set by dashboard study item links).
