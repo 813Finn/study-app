@@ -287,8 +287,15 @@ function openNameModal(isFirstVisit = false) {
 /* ── App initialisieren ───────────────────────────────── */
 function initApp(activePage = 'dashboard') {
   applyTheme(getInitialTheme());
+  // Implicit flow (hash-based)
   if (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite')) {
     window.location.replace('reset-password.html' + window.location.hash);
+    window.appReady = new Promise(() => {});
+    return window.appReady;
+  }
+  // PKCE flow (code in query param) — used for invite + recovery links
+  if (new URLSearchParams(window.location.search).has('code')) {
+    window.location.replace('reset-password.html' + window.location.search);
     window.appReady = new Promise(() => {});
     return window.appReady;
   }
