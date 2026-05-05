@@ -287,6 +287,9 @@ function openNameModal(isFirstVisit = false) {
 /* ── App initialisieren ───────────────────────────────── */
 function initApp(activePage = 'dashboard') {
   applyTheme(getInitialTheme());
+  supabaseClient.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') window.location.replace('reset-password.html');
+  });
   window.appReady = _initAppAsync(activePage);
   return window.appReady;
 }
