@@ -40,11 +40,6 @@ function applyTheme(theme) {
   if (btnLight) btnLight.classList.toggle('active', theme === 'light');
 }
 
-function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme');
-  applyTheme(current === 'dark' ? 'light' : 'dark');
-}
-
 /* ── Profil ───────────────────────────────────────────── */
 function getProfile() {
   return store.get('sf_profile') || { name: '' };
@@ -59,17 +54,17 @@ function getFirstLetter(name) {
 }
 
 /* ── Navbar HTML ──────────────────────────────────────── */
-function buildNavbarHTML(activePage) {
+function buildNavbarHTML() {
   const pages = [
-    { key: 'dashboard', href: 'index.html',    label: 'Dashboard' },
-    { key: 'lernplan',  href: 'lernplan.html', label: 'Lernplan'  },
-    { key: 'module',    href: 'module.html',   label: 'Module'    },
-    { key: 'timer',     href: 'timer.html',    label: 'Timer'     },
+    { key: 'dashboard', href: '#dashboard', label: 'Dashboard' },
+    { key: 'lernplan',  href: '#lernplan',  label: 'Lernplan'  },
+    { key: 'module',    href: '#module',    label: 'Module'    },
+    { key: 'timer',     href: '#timer',     label: 'Timer'     },
   ];
 
   const linksHTML = pages
     .map(p => `
-      <a href="${p.href}" class="nav-link${p.key === activePage ? ' active' : ''}" data-page="${p.key}">
+      <a href="${p.href}" class="nav-link" data-page="${p.key}">
         ${p.label}
       </a>`)
     .join('');
@@ -165,19 +160,16 @@ function buildNameModalHTML() {
 }
 
 /* ── Navbar initialisieren ────────────────────────────── */
-function initNavbar(activePage) {
-  // Navbar in DOM einfügen
-  document.body.insertAdjacentHTML('afterbegin', buildNavbarHTML(activePage));
+function initNavbar() {
+  document.body.insertAdjacentHTML('afterbegin', buildNavbarHTML());
 
   const profileBtn      = document.getElementById('profileBtn');
   const profileDropdown = document.getElementById('profileDropdown');
   const editNameBtn     = document.getElementById('editNameBtn');
 
-  // Theme-Buttons (Mond / Sonne)
   document.getElementById('btnDark').addEventListener('click',  () => applyTheme('dark'));
   document.getElementById('btnLight').addEventListener('click', () => applyTheme('light'));
 
-  // Profil-Dropdown öffnen/schließen
   profileBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const isOpen = profileDropdown.classList.contains('open');
@@ -192,14 +184,12 @@ function initNavbar(activePage) {
 
   profileDropdown.addEventListener('click', (e) => e.stopPropagation());
 
-  // Name ändern
   editNameBtn.addEventListener('click', () => {
     profileDropdown.classList.remove('open');
     profileBtn.setAttribute('aria-expanded', 'false');
     openNameModal();
   });
 
-  // Abmelden
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await supabaseClient.auth.signOut();
     Object.keys(localStorage).filter(k => k.startsWith('sf_')).forEach(k => localStorage.removeItem(k));
@@ -244,7 +234,6 @@ function openNameModal(isFirstVisit = false) {
     saveBtn.textContent = 'Los geht\'s';
   }
 
-  // Open with animation
   requestAnimationFrame(() => {
     modal.classList.add('open');
     setTimeout(() => input.focus(), 80);
@@ -260,7 +249,6 @@ function openNameModal(isFirstVisit = false) {
     modal.classList.remove('open');
     setTimeout(() => modal.remove(), 250);
     updateProfileUI();
-    // Custom event for pages that need to react
     document.dispatchEvent(new CustomEvent('profileUpdated', { detail: { name } }));
   }
 
@@ -273,7 +261,6 @@ function openNameModal(isFirstVisit = false) {
     }
   });
 
-  // Close on backdrop click (only if not first visit)
   if (!isFirstVisit) {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
@@ -284,8 +271,53 @@ function openNameModal(isFirstVisit = false) {
   }
 }
 
+/* ── SPA Router ───────────────────────────────────────── */
+const router = {
+  currentPage: null,
+
+  go(rawHash) {
+    const qIdx     = rawHash.indexOf('?');
+    const page     = (qIdx === -1 ? rawHash : rawHash.slice(0, qIdx)) || 'dashboard';
+    const queryStr = qIdx !== -1 ? rawHash.slice(qIdx + 1) : '';
+
+    const params = {};
+    if (queryStr) {
+      queryStr.split('&').forEach(p => {
+        const eqIdx = p.indexOf('=');
+        if (eqIdx === -1) return;
+        params[decodeURIComponent(p.slice(0, eqIdx))] = decodeURIComponent(p.slice(eqIdx + 1));
+      });
+    }
+
+    document.querySelectorAll('.page-section').forEach(s => { s.hidden = true; });
+
+    const section = document.getElementById(`page-${page}`);
+    if (!section) { router.go('dashboard'); return; }
+    section.hidden = false;
+
+    document.querySelectorAll('.nav-link').forEach(a => {
+      a.classList.toggle('active', a.dataset.page === page);
+    });
+
+    const titles = { dashboard: 'Dashboard', lernplan: 'Lernplan', module: 'Module', timer: 'Timer' };
+    document.title = titles[page] || 'StudyApp';
+
+    router.currentPage = page;
+
+    const fn = window[`initPage_${page}`];
+    if (fn) fn(params);
+  },
+
+  init() {
+    window.addEventListener('hashchange', () => {
+      router.go(window.location.hash.slice(1) || 'dashboard');
+    });
+    router.go(window.location.hash.slice(1) || 'dashboard');
+  },
+};
+
 /* ── App initialisieren ───────────────────────────────── */
-function initApp(activePage = 'dashboard') {
+function initApp() {
   applyTheme(getInitialTheme());
   // Implicit flow (hash-based)
   if (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite')) {
@@ -299,11 +331,11 @@ function initApp(activePage = 'dashboard') {
     window.appReady = new Promise(() => {});
     return window.appReady;
   }
-  window.appReady = _initAppAsync(activePage);
+  window.appReady = _initAppAsync();
   return window.appReady;
 }
 
-async function _initAppAsync(activePage) {
+async function _initAppAsync() {
   const { data: { session } } = await supabaseClient.auth.getSession();
 
   if (!session) {
@@ -317,7 +349,8 @@ async function _initAppAsync(activePage) {
   window._supabaseUser = session.user;
   await loadUserData();
   applyTheme(getInitialTheme());
-  initNavbar(activePage);
+  initNavbar();
+  router.init();
 
   const profile = getProfile();
   if (!profile.name) setTimeout(() => openNameModal(true), 300);
@@ -371,7 +404,6 @@ const DateUtils = {
 
 /* ── Grade-Utilities ──────────────────────────────────── */
 const GradeUtils = {
-  // Effektive Note eines Fachs (berechnet aus Teilleistungen oder direkt)
   effectiveGrade(sub) {
     const sgs = (sub.subGrades || []).filter(sg => sg.grade !== '' && sg.grade != null);
     if (sgs.length > 0) {
@@ -380,14 +412,12 @@ const GradeUtils = {
     return (sub.grade !== '' && sub.grade != null) ? Number(sub.grade) : null;
   },
 
-  // Durchschnitt (alle Fächer gleich gewichtet)
   simpleAverage(subjects) {
     const valid = subjects.filter(s => GradeUtils.effectiveGrade(s) !== null);
     if (!valid.length) return null;
     return valid.reduce((sum, s) => sum + GradeUtils.effectiveGrade(s), 0) / valid.length;
   },
 
-  // Klasse für Farbgebung
   gradeClass(avg) {
     if (avg === null) return '';
     if (avg <= 2.0) return 'grade-good';

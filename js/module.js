@@ -2,8 +2,6 @@
    Notenverwaltung
 ═══════════════════════════════════════════════════════════ */
 
-initApp('module');
-
 // Merkt sich welche Semester zugeklappt sind
 const collapsedSemesters = new Set();
 // Merkt sich welche Fach-Zeilen aufgeklappt sind (Key: "semIdx-subIdx")
@@ -254,7 +252,6 @@ function renderSemesters() {
     return;
   }
 
-  // Neueste Semester oben – semIdx bleibt der echte Array-Index für alle Datenoperationen
   listEl.innerHTML = grades.map((sem, semIdx) => {
     const subjects    = sem.subjects || [];
     const simpleAvg = GradeUtils.simpleAverage(subjects);
@@ -350,7 +347,6 @@ function renderSemesters() {
                           Noch kein Modul eingetragen.
                         </div>`}
           </div>
-          <!-- Modul hinzufügen -->
           <div class="add-item-row">
             <button class="btn btn-primary btn-sm" data-add-sub="${semIdx}">+ Neues Modul</button>
           </div>
@@ -363,7 +359,6 @@ function renderSemesters() {
 
 /* ── Event-Listener für dynamische Elemente ───────────── */
 function attachListeners() {
-  // Name / ECTS eines Moduls im Edit-Modus speichern
   document.querySelectorAll('[data-field]').forEach(input => {
     input.addEventListener('change', () => {
       const semIdx = parseInt(input.dataset.sem);
@@ -379,7 +374,6 @@ function attachListeners() {
         if (val) {
           const sub = grades[semIdx].subjects[subIdx];
           grades[semIdx].subjects[subIdx].name = val;
-          // Exam-Einträge aller Sub-Grades umbenennen
           const exams = store.get('sf_exams') || [];
           let changed = false;
           (sub.subGrades || []).forEach(sg => {
@@ -402,7 +396,6 @@ function attachListeners() {
     });
   });
 
-  // Name einer Prüfungsleistung speichern
   document.querySelectorAll('[data-sg-name]').forEach(input => {
     input.addEventListener('change', () => {
       const [semIdx, subIdx, sgIdx] = input.dataset.sgName.split(',').map(Number);
@@ -412,7 +405,6 @@ function attachListeners() {
       if (!sg) return;
       if (val) {
         sg.name = val;
-        // Exam-Subject aktualisieren
         if (sg.examId) {
           const modName = grades[semIdx]?.subjects[subIdx]?.name || '';
           const exams   = store.get('sf_exams') || [];
@@ -427,7 +419,6 @@ function attachListeners() {
     });
   });
 
-  // Datum einer Prüfungsleistung ändern
   document.querySelectorAll('[data-sg-date]').forEach(input => {
     input.addEventListener('change', () => {
       const [semIdx, subIdx, sgIdx] = input.dataset.sgDate.split(',').map(Number);
@@ -457,7 +448,6 @@ function attachListeners() {
     });
   });
 
-  // Note einer Teilleistung bearbeiten
   document.querySelectorAll('[data-sg-sem]').forEach(input => {
     input.addEventListener('change', () => {
       const semIdx = parseInt(input.dataset.sgSem);
@@ -484,7 +474,6 @@ function attachListeners() {
     });
   });
 
-  // Fach löschen (inkl. aller Sub-Grade-Klausuren)
   document.querySelectorAll('[data-del-sub]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -511,7 +500,6 @@ function attachListeners() {
     });
   });
 
-  // Semester löschen (inkl. aller Sub-Grade-Klausuren aller Module)
   document.querySelectorAll('[data-del-sem]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -539,7 +527,6 @@ function attachListeners() {
     });
   });
 
-  // Modul hinzufügen
   document.querySelectorAll('[data-add-sub]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -568,7 +555,6 @@ function attachListeners() {
     });
   });
 
-  // Teilleistung hinzufügen
   document.querySelectorAll('[data-add-sg]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -614,7 +600,6 @@ function attachListeners() {
     });
   });
 
-  // Teilleistung löschen (inkl. Klausur aus sf_exams)
   document.querySelectorAll('[data-del-sg]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -643,9 +628,8 @@ function attachListeners() {
   });
 }
 
-/* ── Expand-Toggle + Edit-Toggle (einmalig per Event-Delegation) ── */
+/* ── Expand-Toggle + Edit-Toggle (Event-Delegation) ── */
 document.getElementById('semesterList').addEventListener('click', (e) => {
-  // Aufklapp-Pfeil für Teilleistungen
   const toggleBtn = e.target.closest('[data-toggle-sub]');
   if (toggleBtn) {
     e.stopPropagation();
@@ -667,21 +651,18 @@ document.getElementById('semesterList').addEventListener('click', (e) => {
     return;
   }
 
-  // Bleistift → Bearbeitungsmodus aktivieren + Zeile automatisch aufklappen
   const editBtn = e.target.closest('[data-edit-sub]');
   if (editBtn) {
     e.stopPropagation();
     const key = editBtn.dataset.editSub;
     editingSubjects.add(key);
-    expandedSubjects.add(key); // Prüfungsleistungen automatisch einblenden
+    expandedSubjects.add(key);
     renderSemesters();
-    // Fokus auf Namens-Eingabe setzen
     const nameInput = document.querySelector(`[data-field="name"][data-sem="${key.split('-')[0]}"][data-sub="${key.split('-')[1]}"]`);
     if (nameInput) nameInput.focus();
     return;
   }
 
-  // Bleistift → Prüfungsleistungs-Name bearbeiten
   const editSgBtn = e.target.closest('[data-edit-sg]');
   if (editSgBtn) {
     e.stopPropagation();
@@ -695,19 +676,17 @@ document.getElementById('semesterList').addEventListener('click', (e) => {
     return;
   }
 
-  // Haken → Prüfungsleistungs-Bearbeitung beenden
   const doneSgBtn = e.target.closest('[data-done-sg]');
   if (doneSgBtn) {
     e.stopPropagation();
     const sgKey = doneSgBtn.dataset.doneSg.replace(/,/g, '-');
     const [semIdx, subIdx] = sgKey.split('-');
     editingSgRows.delete(sgKey);
-    expandedSubjects.add(`${semIdx}-${subIdx}`); // Panel bleibt offen
+    expandedSubjects.add(`${semIdx}-${subIdx}`);
     renderSemesters();
     return;
   }
 
-  // Haken → Bearbeitungsmodus beenden + Prüfungsleistungen einklappen
   const doneBtn = e.target.closest('[data-done-sub]');
   if (doneBtn) {
     e.stopPropagation();
@@ -718,7 +697,6 @@ document.getElementById('semesterList').addEventListener('click', (e) => {
     return;
   }
 
-  // Semester-Header → auf-/zuklappen
   const semHeader = e.target.closest('[data-toggle]');
   if (semHeader) {
     e.stopPropagation();
@@ -752,7 +730,7 @@ document.getElementById('addSemesterBtn').addEventListener('click', () => {
 });
 
 /* ── Init ─────────────────────────────────────────────── */
-window.appReady.then(() => {
+function initPage_module() {
   renderSummary();
   renderSemesters();
-});
+}

@@ -2,8 +2,6 @@
    Dashboard
 ═══════════════════════════════════════════════════════════ */
 
-initApp('dashboard');
-
 const DAYS_DE = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 const MONTHS_DE = [
   'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
@@ -32,7 +30,6 @@ function renderExamList() {
   const exams = store.get('sf_exams') || [];
   const todayISO = DateUtils.todayISO();
 
-  // Nur zukünftige, sortiert
   const upcoming = exams
     .filter(e => e.date >= todayISO)
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -129,7 +126,7 @@ function renderTodayStudy() {
         </div>`;
     }
     const isDone = item.remainingMins === 0;
-    const href = `timer.html?subject=${encodeURIComponent(item.subject)}`;
+    const href = `#timer?subject=${encodeURIComponent(item.subject)}`;
     return `
       <a href="${href}" class="study-item" style="text-decoration:none">
         <div class="study-item-title">${escapeHtml(item.subject)}</div>
@@ -140,7 +137,7 @@ function renderTodayStudy() {
   }).join('');
 }
 
-/* ── Minuten lesbar formatieren (z.B. "1 Std 30 Min") ── */
+/* ── Minuten lesbar formatieren ───────────────────────── */
 function formatMins(mins) {
   if (mins <= 0) return '0 Min';
   const h = Math.floor(mins / 60);
@@ -209,7 +206,7 @@ function renderQuote() {
   const el  = document.getElementById('quoteCard');
   if (!el) return;
   el.innerHTML = `
-    <p class=”quote-text”>${escapeHtml(q.text)}</p>
+    <p class="quote-text">${escapeHtml(q.text)}</p>
     ${q.author ? `<span class="quote-author">— ${escapeHtml(q.author)}</span>` : ''}`;
 }
 
@@ -220,7 +217,7 @@ function renderWeekBar() {
 
   const today      = new Date();
   const todayISO   = DateUtils.todayISO();
-  const dow        = (today.getDay() + 6) % 7; // 0 = Mo
+  const dow        = (today.getDay() + 6) % 7;
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - dow);
 
@@ -245,7 +242,7 @@ function renderWeekBar() {
       if (history[iso]) mins = Object.values(history[iso]).reduce((s, m) => s + m, 0);
       if (iso === todayISO && todayStats && todayStats.date === todayISO)
         mins = Math.max(mins, todayStats.focusMinutes || 0);
-      if (mins > 0)            status = 'done';
+      if (mins > 0)               status = 'done';
       else if (studyDays.has(iso)) status = 'planned';
     }
 
@@ -361,9 +358,9 @@ function renderCalendarWidget() {
     el.className = 'cal-day';
     el.setAttribute('role', 'gridcell');
 
-    if (iso === todayISO)       el.classList.add('today');
-    if (iso < todayISO)         el.classList.add('past');
-    if (examDates.has(iso))     el.classList.add('exam-day');
+    if (iso === todayISO)        el.classList.add('today');
+    if (iso < todayISO)          el.classList.add('past');
+    if (examDates.has(iso))      el.classList.add('exam-day');
     else if (studyDays.has(iso)) el.classList.add('study-day');
 
     el.dataset.iso  = iso;
@@ -486,7 +483,6 @@ function renderStudyHistorySection() {
   const listEl  = document.getElementById('histModuleList');
   if (!selEl || !listEl) return;
 
-  // Semester-Optionen befüllen (neueste zuerst, wie auf der Modul-Seite)
   const prevVal = selEl.value;
   selEl.innerHTML = grades.length === 0
     ? '<option value="">Keine Semester vorhanden</option>'
@@ -495,7 +491,6 @@ function renderStudyHistorySection() {
         return `<option value="${origI}">${escapeHtml(sem.name)}</option>`;
       }).join('');
 
-  // Vorige Auswahl wiederherstellen, falls noch gültig
   if (prevVal !== '' && grades[parseInt(prevVal)]) selEl.value = prevVal;
 
   const semIdx = parseInt(selEl.value);
@@ -506,7 +501,6 @@ function renderStudyHistorySection() {
 
   const semester = grades[semIdx];
 
-  // Heute immer live aus sf_today_stats einbeziehen (history enthält evtl. noch keinen Eintrag)
   const todayKey   = DateUtils.todayISO();
   const todayStats = store.get('sf_today_stats');
   const mergedHistory = { ...history };
@@ -514,7 +508,6 @@ function renderStudyHistorySection() {
     mergedHistory[todayKey] = todayStats.bySubject;
   }
 
-  // Gesamtminuten pro Prüfungsleistungs-Subjekt über alle Tage summieren
   const totalBySubject = {};
   for (const dayData of Object.values(mergedHistory)) {
     for (const [subject, mins] of Object.entries(dayData)) {
@@ -522,7 +515,6 @@ function renderStudyHistorySection() {
     }
   }
 
-  // Pro Modul alle verknüpften Prüfungsleistungen aufsummieren
   const moduleData = (semester.subjects || []).map(module => {
     let totalMins = 0;
     for (const sg of (module.subGrades || [])) {
@@ -585,7 +577,7 @@ function renderWeeklySummary() {
     return { label, mins, isToday: iso === todayISO, isFuture: iso > todayISO };
   });
 
-  const maxMins  = Math.max(...days.map(d => d.mins), 1);
+  const maxMins   = Math.max(...days.map(d => d.mins), 1);
   const totalMins = days.reduce((s, d) => s + d.mins, 0);
 
   rowsEl.innerHTML = days.map(d => `
@@ -601,7 +593,9 @@ function renderWeeklySummary() {
 }
 
 /* ── Init ─────────────────────────────────────────────── */
-window.appReady.then(() => {
+let _dashboardReady = false;
+
+function initPage_dashboard() {
   renderGreeting();
   renderNextExamHero();
   renderQuote();
@@ -619,6 +613,9 @@ window.appReady.then(() => {
   const studyDays = computeStudyDays(exams);
   showDayDetail(DateUtils.todayISO(), exams, studyDays);
 
-  document.getElementById('histSemesterSelect')
-    .addEventListener('change', renderStudyHistorySection);
-});
+  if (!_dashboardReady) {
+    document.getElementById('histSemesterSelect')
+      .addEventListener('change', renderStudyHistorySection);
+    _dashboardReady = true;
+  }
+}

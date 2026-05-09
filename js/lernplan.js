@@ -2,8 +2,6 @@
    Lernplan – Pro-Prüfungs-Planung
 ═══════════════════════════════════════════════════════════ */
 
-initApp('lernplan');
-
 const DAYS_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 const DAYS_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Mo–So
 
@@ -32,7 +30,6 @@ function getStudiedMinutes(examSubject) {
     total += dayData[examSubject] || 0;
   }
 
-  // Heute einbeziehen falls noch nicht in history geschrieben
   if (todaySt && todaySt.date === todayKey && !(todayKey in history)) {
     total += (todaySt.bySubject && todaySt.bySubject[examSubject]) || 0;
   }
@@ -93,7 +90,6 @@ function renderExamCard(exam, plan, animIdx) {
 
   const daysLabel = days <= 0 ? 'Heute' : days === 1 ? 'Morgen' : `${days} Tage`;
 
-  // Noch ausstehende geplante Stunden
   let progressHTML = '';
   if (hasPlan) {
     if (remainingMins > 0) {
@@ -182,7 +178,7 @@ function render() {
       <div class="card">
         <div class="empty-state">
           <div class="empty-state-icon">📅</div>
-          <p>Keine anstehenden Prüfungen. Trage Klausurdaten auf der <a href="module.html">Modul-Seite</a> ein.</p>
+          <p>Keine anstehenden Prüfungen. Trage Klausurdaten auf der <a href="#module">Modul-Seite</a> ein.</p>
         </div>
       </div>`;
     return;
@@ -195,4 +191,7 @@ function render() {
   attachCardListeners(container);
 }
 
-window.appReady.then(() => render());
+/* ── Init ─────────────────────────────────────────────── */
+function initPage_lernplan() {
+  render();
+}

@@ -2,8 +2,6 @@
    Pomodoro-Timer
 ═══════════════════════════════════════════════════════════ */
 
-initApp('timer');
-
 /* ── Konstanten ───────────────────────────────────────── */
 const CIRCUMFERENCE = 2 * Math.PI * 104; // ≈ 653.45
 
@@ -43,6 +41,7 @@ let intervalId      = null;
 let cyclesDone      = 0;        // Abgeschlossene Pomodoros in diesem Zyklus
 let todayKey        = DateUtils.todayISO();
 let selectedSubject = '';       // Aktuell gewähltes Fach (leer = kein Fach)
+let timerInitialized = false;
 
 /* ── Minuten lesbar formatieren ───────────────────────── */
 function formatMins(mins) {
@@ -218,8 +217,10 @@ function updateUI() {
 
   playBtn.setAttribute('aria-label', isRunning ? 'Pausieren' : 'Starten');
 
-  // Dokument-Titel
-  document.title = `${formatTime(timeLeft)} – ${PHASE_LABELS[currentPhase]}`;
+  // Dokument-Titel (nur wenn Timer-Seite sichtbar)
+  if (!document.getElementById('page-timer')?.hidden) {
+    document.title = `${formatTime(timeLeft)} – ${PHASE_LABELS[currentPhase]}`;
+  }
 
   // Phase-Tabs
   document.querySelectorAll('.phase-tab').forEach(tab => {
@@ -393,9 +394,10 @@ document.querySelectorAll('.phase-tab').forEach(tab => {
   });
 });
 
-// Tastatur-Shortcut: Leertaste = Play/Pause
+// Tastatur-Shortcut: Leertaste = Play/Pause (nur wenn Timer-Seite aktiv)
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && e.target === document.body) {
+    if (document.getElementById('page-timer')?.hidden) return;
     e.preventDefault();
     toggleTimer();
   }
@@ -442,25 +444,24 @@ document.getElementById('subjectSelect').addEventListener('change', (e) => {
 });
 
 /* ── Init ─────────────────────────────────────────────── */
-window.appReady.then(() => {
-  // Settings aus Supabase-Daten neu laden
-  settings  = loadTimerSettings();
-  timeLeft  = settings.workMinutes * 60;
-  totalTime = settings.workMinutes * 60;
+function initPage_timer(params = {}) {
+  if (!timerInitialized) {
+    settings  = loadTimerSettings();
+    timeLeft  = settings.workMinutes * 60;
+    totalTime = settings.workMinutes * 60;
 
-  document.getElementById('setWork').value   = settings.workMinutes;
-  document.getElementById('setShort').value  = settings.shortBreakMinutes;
-  document.getElementById('setLong').value   = settings.longBreakMinutes;
-  document.getElementById('setCycles').value = settings.cyclesBeforeLong;
+    document.getElementById('setWork').value   = settings.workMinutes;
+    document.getElementById('setShort').value  = settings.shortBreakMinutes;
+    document.getElementById('setLong').value   = settings.longBreakMinutes;
+    document.getElementById('setCycles').value = settings.cyclesBeforeLong;
 
-  // URL-Parameter ?subject=... auslesen (z.B. vom Dashboard-Start-Button)
-  const urlParams   = new URLSearchParams(window.location.search);
-  const paramSubject = urlParams.get('subject');
-  if (paramSubject) selectedSubject = paramSubject;
+    switchToPhase('work');
+    timerInitialized = true;
+  }
 
+  if (params.subject) selectedSubject = params.subject;
   renderSubjectSelector();
   renderSubjectProgress();
-  switchToPhase('work');
   renderTodayStats();
   renderModuleTimeCard();
-});
+}

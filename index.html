@@ -3,10 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard</title>
+  <title>StudyApp</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/components.css" />
   <style>
+    /* ── SPA: alle Sektionen standardmäßig versteckt ── */
+    .page-section[hidden] { display: none !important; }
+
+    /* ════════════════════════════════════════════════
+       Dashboard
+    ════════════════════════════════════════════════ */
+
     /* ── Greeting ── */
     .dashboard-greeting {
       margin-bottom: var(--sp-10);
@@ -133,8 +140,6 @@
       pointer-events: none;
       user-select: none;
     }
-
-
 
     .quote-text {
       font-size: var(--text-sm);
@@ -295,8 +300,6 @@
     }
 
     /* ── Week bar ── */
-    .week-bar-card { }
-
     .week-bar {
       display: flex;
       gap: var(--sp-2);
@@ -688,207 +691,1201 @@
       .greeting-title        { font-size: var(--text-4xl); }
       .dashboard-greeting    { padding: var(--sp-6); }
     }
+
+    /* ════════════════════════════════════════════════
+       Lernplan
+    ════════════════════════════════════════════════ */
+
+    .exam-plans-grid {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-4);
+    }
+
+    .plan-progress {
+      margin-bottom: var(--sp-4);
+    }
+
+    .plan-progress-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--text-sm);
+      color: var(--fg-2);
+      margin-bottom: var(--sp-2);
+    }
+
+    .plan-progress-bar {
+      height: 8px;
+      background: var(--bg-2);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .plan-progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    .today-plan-info {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      margin-bottom: var(--sp-5);
+    }
+    .today-plan-info .plan-stat-val {
+      font-family: var(--font-serif);
+      font-size: var(--text-2xl);
+      font-weight: 700;
+      color: var(--accent-on-bg);
+      line-height: 1;
+    }
+    .today-plan-info .plan-stat-label {
+      font-size: var(--text-sm);
+      color: var(--fg-2);
+      line-height: 1.3;
+    }
+    .today-plan-info.done .plan-stat-val {
+      color: var(--cal-study);
+    }
+
+    .weekday-row {
+      display: flex;
+      gap: var(--sp-3);
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    .weekday-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--sp-1);
+    }
+
+    .weekday-item-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--fg-2);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .weekday-item-label:hover { color: var(--fg-1); }
+
+    .weekday-item .day-cb {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    .weekday-hours {
+      width: 54px;
+      text-align: center;
+      padding: var(--sp-1) var(--sp-2);
+      font-size: var(--text-sm);
+    }
+
+    .plan-save-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: var(--sp-4);
+    }
+
+    .no-plan-hint {
+      font-size: var(--text-sm);
+      color: var(--fg-3);
+      margin-bottom: var(--sp-3);
+    }
+
+    /* ════════════════════════════════════════════════
+       Module
+    ════════════════════════════════════════════════ */
+
+    /* ── Summary bar ── */
+    .grade-summary {
+      display: flex;
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-8);
+      flex-wrap: wrap;
+    }
+
+    /* ── Semester block ── */
+    .semester-block {
+      margin-bottom: var(--sp-6);
+    }
+
+    .semester-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-4) var(--sp-5);
+      background-color: var(--bg-subtle);
+      border-radius: var(--r-md) var(--r-md) 0 0;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color var(--t-fast);
+    }
+
+    .semester-header:hover {
+      background-color: var(--bg-muted);
+    }
+
+    .semester-header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+    }
+
+    .semester-name {
+      font-family: 'Eczar', Georgia, serif;
+      font-size: var(--text-md);
+      font-weight: 700;
+      color: var(--fg);
+    }
+
+    .semester-avg {
+      font-family: 'Eczar', Georgia, serif;
+      font-size: var(--text-xl);
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .semester-body {
+      border: 1px solid var(--border-subtle);
+      border-top: none;
+      border-radius: 0 0 var(--r-md) var(--r-md);
+      overflow: hidden;
+    }
+
+    /* ── Flex-basierte Modulliste ── */
+    .subjects-list {
+      width: 100%;
+    }
+
+    /* Header-Zeile */
+    .subjects-header {
+      display: flex;
+      align-items: center;
+      padding: var(--sp-2) var(--sp-4);
+      background-color: var(--bg-elevated);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--fg-3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Jede Modul-Zeile */
+    .subject-row-flex {
+      display: flex;
+      align-items: center;
+      padding: var(--sp-3) var(--sp-4);
+      min-height: 52px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .subject-row-flex:last-of-type {
+      border-bottom: none;
+    }
+
+    .subject-item:nth-child(even) .subject-row-flex {
+      background-color: var(--bg);
+    }
+
+    .subject-item:nth-child(odd) .subject-row-flex {
+      background-color: var(--bg-elevated);
+    }
+
+    /* Spalten-Breiten */
+    .col-name    { flex: 1; min-width: 0; font-weight: 500; }
+    .col-name .form-input { max-width: 320px; }
+    .col-note    { width: 80px; flex-shrink: 0; }
+    .col-note .form-input { width: 100%; }
+    .col-ects    { width: 80px; flex-shrink: 0; }
+    .col-ects .form-input { width: 100%; }
+    .col-actions { width: 88px; flex-shrink: 0; display: flex; justify-content: flex-end; gap: var(--sp-2); align-items: center; }
+
+    /* Zeile mit "Hinzufügen"-Button */
+    .add-item-row {
+      padding: var(--sp-3) var(--sp-4);
+      background-color: var(--bg-subtle);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    /* ── Statische Noten-/ECTS-Anzeige ── */
+    .grade-display,
+    .ects-display {
+      font-family: 'Eczar', Georgia, serif;
+      font-weight: 700;
+      font-size: var(--text-md);
+      color: var(--fg);
+    }
+
+    .subject-actions {
+      display: flex;
+      gap: var(--sp-2);
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    /* ── Expand-Toggle ── */
+    .expand-toggle {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: var(--fg-3);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: var(--r-sm);
+      margin-right: var(--sp-1);
+      flex-shrink: 0;
+      transition: color var(--t-fast), transform var(--t-fast), background-color var(--t-fast);
+      vertical-align: middle;
+    }
+
+    .expand-toggle:hover {
+      color: var(--fg);
+      background-color: var(--bg-muted);
+    }
+
+    .expand-toggle.expanded {
+      transform: rotate(90deg);
+      color: var(--accent);
+    }
+
+    /* ── col-name braucht Flex ── */
+    .col-name {
+      display: flex;
+      align-items: center;
+    }
+
+    /* ── Teilleistungen-Panel ── */
+    .sub-grades-row {
+      display: none;
+    }
+
+    .sub-grades-row.is-expanded {
+      display: block;
+    }
+
+    .sub-grades-inner {
+      border-left: 3px solid var(--accent);
+      background-color: var(--bg-subtle);
+    }
+
+    .sg-row {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      padding: var(--sp-2) var(--sp-4);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sg-row:last-child {
+      border-bottom: none;
+    }
+
+    .sg-col-name {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      font-size: var(--text-sm);
+      color: var(--fg-2);
+    }
+
+    .sg-col-date {
+      width: 130px;
+      flex-shrink: 0;
+    }
+
+    .sg-col-date .form-input {
+      width: 100%;
+    }
+
+    .sg-col-note {
+      width: 80px;
+      flex-shrink: 0;
+    }
+
+    .sg-col-note .form-input {
+      width: 100% !important;
+    }
+
+    .sg-col-actions {
+      width: 88px;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: var(--sp-2);
+    }
+
+    .sub-grade-tree-char {
+      color: var(--fg-3);
+      font-size: var(--text-xs);
+      flex-shrink: 0;
+    }
+
+    /* ── Berechnete Note ── */
+    .computed-grade {
+      font-family: 'Eczar', Georgia, serif;
+      font-weight: 700;
+      font-size: var(--text-md);
+      cursor: help;
+      display: inline-block;
+      vertical-align: middle;
+      text-decoration: underline;
+      text-decoration-style: dashed;
+      text-decoration-color: var(--border);
+      text-underline-offset: 3px;
+    }
+
+    /* ── Semester auf-/zuklappen ── */
+    .semester-body.is-collapsed {
+      display: none;
+    }
+
+    .semester-chevron {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      color: var(--fg-3);
+      flex-shrink: 0;
+      transition: transform var(--t-fast), color var(--t-fast);
+    }
+
+    .semester-header:hover .semester-chevron {
+      color: var(--fg);
+    }
+
+    .semester-chevron.expanded {
+      transform: rotate(90deg);
+    }
+
+    /* ── Semesterschnitt-Block ── */
+    .sem-avg-block {
+      display: flex;
+      gap: var(--sp-3);
+      align-items: center;
+    }
+
+    .sem-avg-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+    }
+
+    /* ── Statische Anzeige in Sub-Grade-Zeilen ── */
+    .sg-static {
+      font-size: var(--text-sm);
+      color: var(--fg-3);
+      padding: 0 var(--sp-1);
+    }
+
+    .sg-static.sg-grade {
+      font-family: 'Eczar', Georgia, serif;
+      font-weight: 700;
+      font-size: var(--text-md);
+      color: var(--fg);
+    }
+
+    .sg-static.sg-grade.grade-good { color: var(--grade-good); }
+    .sg-static.sg-grade.grade-mid  { color: var(--grade-mid);  }
+    .sg-static.sg-grade.grade-bad  { color: var(--grade-bad);  }
+
+    .sem-avg-label {
+      font-size: 9px;
+      color: var(--fg-3);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      line-height: 1;
+      font-family: 'Onest', sans-serif;
+    }
+
+    /* ════════════════════════════════════════════════
+       Timer
+    ════════════════════════════════════════════════ */
+
+    /* ── Timer-Layout ── */
+    .timer-page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: var(--sp-10) var(--sp-6);
+    }
+
+    /* ── Phase-Tabs ── */
+    .phase-tabs {
+      display: flex;
+      gap: var(--sp-2);
+      justify-content: center;
+      margin-bottom: var(--sp-10);
+    }
+
+    .phase-tab {
+      padding: var(--sp-2) var(--sp-4);
+      border-radius: var(--r-full);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--fg-3);
+      cursor: pointer;
+      transition: background-color var(--t-fast), color var(--t-fast);
+    }
+
+    .phase-tab:hover {
+      background-color: var(--bg-subtle);
+      color: var(--fg);
+    }
+
+    .phase-tab.active {
+      background-color: var(--accent-dim);
+      color: var(--accent-on-bg);
+    }
+
+    /* ── Fortschrittsring ── */
+    .timer-ring-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: var(--sp-8);
+      position: relative;
+    }
+
+    .timer-svg {
+      width: 240px;
+      height: 240px;
+      transform: rotate(-90deg);
+    }
+
+    .timer-track {
+      fill: none;
+      stroke: var(--bg-muted);
+      stroke-width: 9;
+    }
+
+    .timer-progress {
+      fill: none;
+      stroke: var(--accent-on-bg);
+      stroke-width: 9;
+      stroke-linecap: round;
+      stroke-dasharray: 653;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 1s linear, stroke var(--t-base);
+    }
+
+    .timer-progress.break-mode {
+      stroke: var(--grade-good);
+    }
+
+    .timer-display {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .timer-time {
+      font-family: 'Eczar', Georgia, serif;
+      font-size: 3.25rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--fg);
+      line-height: 1;
+    }
+
+    .timer-phase-label {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--fg-3);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: var(--sp-2);
+    }
+
+    /* ── Zyklus-Dots ── */
+    .cycle-dots {
+      display: flex;
+      gap: var(--sp-2);
+      justify-content: center;
+      margin-top: var(--sp-1);
+    }
+
+    .cycle-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--r-full);
+      background-color: var(--bg-muted);
+      transition: background-color var(--t-base);
+    }
+
+    .cycle-dot.done {
+      background-color: var(--accent-on-bg);
+    }
+
+    /* ── Steuerungs-Buttons ── */
+    .timer-controls {
+      display: flex;
+      gap: var(--sp-3);
+      justify-content: center;
+      align-items: center;
+      margin-bottom: var(--sp-10);
+    }
+
+    .btn-play {
+      width: 68px;
+      height: 68px;
+      border-radius: var(--r-full);
+      background-color: var(--accent);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px oklch(0.68 0.18 58 / 0.35);
+      transition: background-color var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
+    }
+
+    .btn-play:hover {
+      background-color: var(--accent-hover);
+      transform: scale(1.05);
+    }
+
+    .btn-play:active {
+      transform: scale(0.95);
+    }
+
+    .btn-play.break-mode {
+      background-color: var(--grade-good);
+      box-shadow: 0 4px 16px oklch(0.60 0.15 140 / 0.35);
+    }
+
+    /* ── Tageszähler ── */
+    .today-stats {
+      display: flex;
+      gap: var(--sp-6);
+      justify-content: center;
+      padding: var(--sp-5);
+      background-color: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
+      margin-bottom: var(--sp-8);
+      flex-wrap: wrap;
+    }
+
+    .today-stat {
+      text-align: center;
+    }
+
+    .today-stat-value {
+      font-family: 'Eczar', Georgia, serif;
+      font-size: var(--text-2xl);
+      font-weight: 800;
+      color: var(--fg);
+      line-height: 1;
+    }
+
+    .today-stat-label {
+      font-size: var(--text-xs);
+      color: var(--fg-3);
+      margin-top: var(--sp-1);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+
+    /* ── Einstellungen ── */
+    .timer-settings {
+      background-color: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+
+    .settings-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-4) var(--sp-5);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--fg-2);
+      transition: background-color var(--t-fast), color var(--t-fast);
+    }
+
+    .settings-toggle:hover {
+      background-color: var(--bg-subtle);
+      color: var(--fg);
+    }
+
+    .settings-chevron {
+      transition: transform var(--t-base);
+    }
+
+    .settings-toggle[aria-expanded="true"] .settings-chevron {
+      transform: rotate(180deg);
+    }
+
+    .settings-body {
+      display: none;
+      padding: var(--sp-5);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .settings-body.open {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: var(--sp-4);
+    }
+
+    /* ── Info-Tooltip ── */
+    .info-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: var(--r-full);
+      border: 1.5px solid var(--fg-3);
+      color: var(--fg-3);
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'Onest', sans-serif;
+      cursor: default;
+      position: relative;
+      vertical-align: middle;
+      margin-left: var(--sp-2);
+      flex-shrink: 0;
+      transition: border-color var(--t-fast), color var(--t-fast);
+      user-select: none;
+    }
+
+    .info-btn:hover {
+      border-color: var(--accent-on-bg);
+      color: var(--accent-on-bg);
+    }
+
+    .info-tooltip {
+      position: absolute;
+      top: 50%;
+      left: calc(100% + 12px);
+      transform: translateY(-50%);
+      width: 260px;
+      background-color: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-md);
+      padding: var(--sp-3) var(--sp-4);
+      font-size: var(--text-sm);
+      color: var(--fg-2);
+      line-height: 1.5;
+      text-align: left;
+      box-shadow: 0 8px 32px oklch(0 0 0 / 0.22);
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity var(--t-fast), visibility var(--t-fast);
+      z-index: 9999;
+    }
+
+    .info-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 100%;
+      transform: translateY(-50%);
+      border: 6px solid transparent;
+      border-right-color: var(--border-subtle);
+    }
+
+    .info-tooltip::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 100%;
+      transform: translateY(-50%);
+      margin-right: -1px;
+      border: 5px solid transparent;
+      border-right-color: var(--bg-elevated);
+      z-index: 1;
+    }
+
+    .info-btn:hover .info-tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* ── Fach-Selektor ── */
+    .subject-selector {
+      max-width: 340px;
+      margin: 0 auto var(--sp-8);
+      text-align: center;
+    }
+
+    .subject-selector .form-label {
+      display: block;
+      text-align: center;
+      margin-bottom: var(--sp-2);
+    }
+
+    .subject-selector .form-input {
+      text-align: center;
+      width: 100%;
+    }
+
+    .subject-progress {
+      margin-top: var(--sp-3);
+      padding: var(--sp-2) var(--sp-4);
+      background-color: var(--bg-subtle);
+      border-radius: var(--r-full);
+      font-size: var(--text-sm);
+      color: var(--fg-2);
+      display: none;
+    }
+
+    .subject-progress.done {
+      background-color: oklch(0.60 0.15 140 / 0.12);
+      color: var(--grade-good);
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-6px); }
+      40%       { transform: translateX(6px); }
+      60%       { transform: translateX(-4px); }
+      80%       { transform: translateX(4px); }
+    }
+    .subject-selector.shake { animation: shake 0.35s ease; }
+
+    .subject-hint {
+      margin-top: var(--sp-2);
+      font-size: var(--text-sm);
+      color: var(--fg-3);
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      .settings-body.open {
+        grid-template-columns: 1fr;
+      }
+      .timer-time {
+        font-size: 2.75rem;
+      }
+      .timer-svg {
+        width: 200px;
+        height: 200px;
+      }
+    }
   </style>
 </head>
 <body>
-  <!-- Navbar injected by app.js -->
+  <!-- Navbar wird von app.js eingefügt -->
 
-  <main class="page" id="dashboardPage">
+  <!-- ══════════════ Dashboard ══════════════ -->
+  <section id="page-dashboard" class="page-section" hidden>
+    <main class="page" id="dashboardPage">
 
-    <!-- Greeting -->
-    <div class="dashboard-greeting anim-up-1">
-      <p class="greeting-date" id="greetingDate"></p>
-      <h1 class="greeting-title">
-        Hallo, <span class="greeting-name" id="greetingName">–</span>
-      </h1>
-    </div>
-
-    <!-- Next Exam Hero -->
-    <div id="nextExamHero" hidden class="card next-exam-hero anim-up-2">
-      <div class="hero-meta" id="heroMeta"></div>
-      <div class="hero-body">
-        <div class="hero-countdown" id="heroCountdown"></div>
-        <div>
-          <div class="hero-subject" id="heroSubject"></div>
-          <div class="hero-date" id="heroDate"></div>
-        </div>
+      <!-- Greeting -->
+      <div class="dashboard-greeting anim-up-1">
+        <p class="greeting-date" id="greetingDate"></p>
+        <h1 class="greeting-title">
+          Hallo, <span class="greeting-name" id="greetingName">–</span>
+        </h1>
       </div>
-      <a href="lernplan.html" class="btn btn-ghost btn-sm" style="align-self:flex-start">Zum Lernplan</a>
-    </div>
 
-    <div class="dashboard-layout">
-      <!-- Main column -->
-      <div class="dashboard-main">
-
-        <!-- Section: Heute -->
-        <div class="section-category anim-up-3">
-          <div class="section-category-header">
-            <span class="section-category-label">Heute</span>
+      <!-- Next Exam Hero -->
+      <div id="nextExamHero" hidden class="card next-exam-hero anim-up-2">
+        <div class="hero-meta" id="heroMeta"></div>
+        <div class="hero-body">
+          <div class="hero-countdown" id="heroCountdown"></div>
+          <div>
+            <div class="hero-subject" id="heroSubject"></div>
+            <div class="hero-date" id="heroDate"></div>
           </div>
+        </div>
+        <a href="#lernplan" class="btn btn-ghost btn-sm" style="align-self:flex-start">Zum Lernplan</a>
+      </div>
 
-          <!-- Quote -->
-          <div class="card quote-card" id="quoteCard"></div>
+      <div class="dashboard-layout">
+        <!-- Main column -->
+        <div class="dashboard-main">
 
-          <!-- Focus + Study plan -->
-          <div class="heute-grid">
-            <div class="card focus-card">
-              <div class="card-header">
-                <div class="card-title">Fokuszeit</div>
-              </div>
-              <div class="focus-stats">
-                <div>
-                  <div class="focus-stat-value" id="statTodayDone">–</div>
-                  <div class="focus-stat-label">heute gelernt</div>
-                </div>
-                <div>
-                  <div class="focus-stat-value" id="statToday">–</div>
-                  <div class="focus-stat-label">noch geplant</div>
-                </div>
-              </div>
-              <a href="timer.html" class="btn btn-primary" style="width:100%">Timer starten</a>
+          <!-- Section: Heute -->
+          <div class="section-category anim-up-3">
+            <div class="section-category-header">
+              <span class="section-category-label">Heute</span>
             </div>
 
-            <div class="card">
-              <div class="card-header">
-                <div>
-                  <div class="card-title">Lernplan</div>
-                  <div class="card-subtitle" id="todaySubtitle"></div>
+            <!-- Quote -->
+            <div class="card quote-card" id="quoteCard"></div>
+
+            <!-- Focus + Study plan -->
+            <div class="heute-grid">
+              <div class="card focus-card">
+                <div class="card-header">
+                  <div class="card-title">Fokuszeit</div>
+                </div>
+                <div class="focus-stats">
+                  <div>
+                    <div class="focus-stat-value" id="statTodayDone">–</div>
+                    <div class="focus-stat-label">heute gelernt</div>
+                  </div>
+                  <div>
+                    <div class="focus-stat-value" id="statToday">–</div>
+                    <div class="focus-stat-label">noch geplant</div>
+                  </div>
+                </div>
+                <a href="#timer" class="btn btn-primary" style="width:100%">Timer starten</a>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <div>
+                    <div class="card-title">Lernplan</div>
+                    <div class="card-subtitle" id="todaySubtitle"></div>
+                  </div>
+                </div>
+                <div id="todayStudyList">
+                  <div class="empty-state">
+                    <p>Heute stehen keine Lerneinheiten an.</p>
+                  </div>
                 </div>
               </div>
-              <div id="todayStudyList">
+            </div>
+
+            <!-- Week bar -->
+            <div class="card week-bar-card">
+              <div class="card-title">Diese Woche</div>
+              <div id="weekBar" class="week-bar"></div>
+            </div>
+          </div>
+
+          <!-- Section: Prüfungsleistungen -->
+          <div class="section-category anim-up-4">
+            <div class="section-category-header">
+              <span class="section-category-label">Prüfungsleistungen</span>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <div class="flex items-center gap-2">
+                  <div class="card-title">Anstehend</div>
+                  <span class="badge badge-neutral" id="statExams">0</span>
+                </div>
+              </div>
+              <div id="examList">
                 <div class="empty-state">
-                  <p>Heute stehen keine Lerneinheiten an.</p>
+                  <p>Noch keine Prüfungsleistungen eingetragen.</p>
                 </div>
               </div>
+              <a href="#lernplan" class="btn btn-primary" style="width:100%;margin-top:var(--sp-4)">Zum Lernplan</a>
             </div>
           </div>
 
-          <!-- Week bar -->
-          <div class="card week-bar-card">
-            <div class="card-title">Diese Woche</div>
-            <div id="weekBar" class="week-bar"></div>
+          <!-- Section: Leistung -->
+          <div class="section-category anim-up-5">
+            <div class="section-category-header">
+              <span class="section-category-label">Leistung</span>
+            </div>
+            <div class="leistung-grid">
+              <div class="card grade-avg-card">
+                <div class="stat-label">Notenschnitt</div>
+                <div class="grade-avg-value" id="statAvg">–</div>
+                <div class="stat-sub">Ø aller Module</div>
+              </div>
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Lernzeit nach Semester</div>
+                  <select class="form-input" id="histSemesterSelect" style="width:auto;min-width:160px"></select>
+                </div>
+                <div id="histModuleList"></div>
+              </div>
+            </div>
+            <div id="subjectBreakdown" hidden>
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Lernzeit heute nach Fach</div>
+                </div>
+                <div id="subjectBreakdownList"></div>
+              </div>
+            </div>
           </div>
+
         </div>
 
-        <!-- Section: Prüfungsleistungen -->
-        <div class="section-category anim-up-4">
-          <div class="section-category-header">
-            <span class="section-category-label">Prüfungsleistungen</span>
-          </div>
+        <!-- Sidebar -->
+        <div class="dashboard-sidebar anim-up-2">
+
+          <!-- Calendar -->
           <div class="card">
-            <div class="card-header">
-              <div class="flex items-center gap-2">
-                <div class="card-title">Anstehend</div>
-                <span class="badge badge-neutral" id="statExams">0</span>
-              </div>
+            <div class="calendar-nav">
+              <button class="btn btn-primary btn-sm" id="todayBtn" style="font-size:var(--text-sm)">Heute</button>
+              <button class="calendar-nav-btn" id="prevMonth" aria-label="Vorheriger Monat">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+              </button>
+              <span class="calendar-month" id="calMonthLabel"></span>
+              <button class="calendar-nav-btn" id="nextMonth" aria-label="Nächster Monat">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
             </div>
-            <div id="examList">
-              <div class="empty-state">
-                <p>Noch keine Prüfungsleistungen eingetragen.</p>
-              </div>
-            </div>
-            <a href="lernplan.html" class="btn btn-primary" style="width:100%;margin-top:var(--sp-4)">Zum Lernplan</a>
-          </div>
-        </div>
 
-        <!-- Section: Leistung -->
-        <div class="section-category anim-up-5">
-          <div class="section-category-header">
-            <span class="section-category-label">Leistung</span>
-          </div>
-          <div class="leistung-grid">
-            <div class="card grade-avg-card">
-              <div class="stat-label">Notenschnitt</div>
-              <div class="grade-avg-value" id="statAvg">–</div>
-              <div class="stat-sub">Ø aller Module</div>
-            </div>
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title">Lernzeit nach Semester</div>
-                <select class="form-input" id="histSemesterSelect" style="width:auto;min-width:160px"></select>
-              </div>
-              <div id="histModuleList"></div>
-            </div>
-          </div>
-          <div id="subjectBreakdown" hidden>
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title">Lernzeit heute nach Fach</div>
-              </div>
-              <div id="subjectBreakdownList"></div>
-            </div>
-          </div>
-        </div>
+            <div class="calendar-grid" id="calGrid" role="grid" aria-label="Kalender"></div>
 
+            <div id="dayDetail" class="day-detail" hidden>
+              <div class="day-detail-date" id="dayDetailDate"></div>
+              <div id="dayDetailContent"></div>
+            </div>
+
+            <div class="cal-legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background:var(--cal-study)"></div>
+                Lerntag
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:var(--cal-exam)"></div>
+                Klausur
+              </div>
+            </div>
+          </div>
+
+          <!-- Streak -->
+          <div class="card streak-card">
+            <div class="streak-label">Lernserie</div>
+            <div class="streak-value" id="streakValue">0</div>
+            <div class="streak-sub" id="streakSub">Tage in Folge</div>
+          </div>
+
+          <!-- Lernzeit diese Woche -->
+          <div class="card">
+            <div class="card-title" style="margin-bottom:var(--sp-4)">Lernzeit diese Woche</div>
+            <div id="weeklySummaryRows"></div>
+            <div class="weekly-summary-total">
+              <span style="font-size:var(--text-xs);color:var(--fg-3);font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Gesamt</span>
+              <span id="weeklySummaryTotal" style="font-size:var(--text-sm);font-weight:700;color:var(--fg)">–</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- ══════════════ Lernplan ══════════════ -->
+  <section id="page-lernplan" class="page-section" hidden>
+    <main class="page">
+      <div class="page-header anim-up-1">
+        <h1>Lernplan</h1>
+        <p>Plane deine Lernzeit individuell für jede anstehende Prüfung.</p>
+      </div>
+      <div id="examPlansList" class="exam-plans-grid"></div>
+    </main>
+  </section>
+
+  <!-- ══════════════ Module ══════════════ -->
+  <section id="page-module" class="page-section" hidden>
+    <main class="page">
+      <div class="page-header anim-up-1">
+        <h1>Module</h1>
+        <p>Module und Prüfungsleistungen eintragen – dein Schnitt wird automatisch ECTS-gewichtet berechnet.</p>
       </div>
 
-      <!-- Sidebar -->
-      <div class="dashboard-sidebar anim-up-2">
+      <!-- Gesamtüberblick -->
+      <div class="grade-summary anim-up-2" id="gradeSummary"></div>
 
-        <!-- Calendar -->
-        <div class="card">
-          <div class="calendar-nav">
-            <button class="btn btn-primary btn-sm" id="todayBtn" style="font-size:var(--text-sm)">Heute</button>
-            <button class="calendar-nav-btn" id="prevMonth" aria-label="Vorheriger Monat">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                   fill="none" stroke="currentColor" stroke-width="2.5"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="15 18 9 12 15 6"/>
-              </svg>
-            </button>
-            <span class="calendar-month" id="calMonthLabel"></span>
-            <button class="calendar-nav-btn" id="nextMonth" aria-label="Nächster Monat">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                   fill="none" stroke="currentColor" stroke-width="2.5"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-            </button>
-          </div>
-
-          <div class="calendar-grid" id="calGrid" role="grid" aria-label="Kalender"></div>
-
-          <div id="dayDetail" class="day-detail" hidden>
-            <div class="day-detail-date" id="dayDetailDate"></div>
-            <div id="dayDetailContent"></div>
-          </div>
-
-          <div class="cal-legend">
-            <div class="legend-item">
-              <div class="legend-dot" style="background:var(--cal-study)"></div>
-              Lerntag
-            </div>
-            <div class="legend-item">
-              <div class="legend-dot" style="background:var(--cal-exam)"></div>
-              Klausur
-            </div>
-          </div>
-        </div>
-
-        <!-- Streak -->
-        <div class="card streak-card">
-          <div class="streak-label">Lernserie</div>
-          <div class="streak-value" id="streakValue">0</div>
-          <div class="streak-sub" id="streakSub">Tage in Folge</div>
-        </div>
-
-        <!-- Lernzeit diese Woche -->
-        <div class="card">
-          <div class="card-title" style="margin-bottom:var(--sp-4)">Lernzeit diese Woche</div>
-          <div id="weeklySummaryRows"></div>
-          <div class="weekly-summary-total">
-            <span style="font-size:var(--text-xs);color:var(--fg-3);font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Gesamt</span>
-            <span id="weeklySummaryTotal" style="font-size:var(--text-sm);font-weight:700;color:var(--fg)">–</span>
-          </div>
-        </div>
-
+      <!-- Semester hinzufügen -->
+      <div class="anim-up-3" style="display:flex; justify-content:flex-end; margin-bottom:var(--sp-8)">
+        <button class="btn btn-primary" id="addSemesterBtn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Neues Semester anlegen
+        </button>
       </div>
-    </div>
-  </main>
+
+      <!-- Semester-Liste -->
+      <div id="semesterList">
+        <div class="empty-state" style="padding-top: var(--sp-20)">
+          <div class="empty-state-icon">📚</div>
+          <p>Noch kein Semester angelegt.<br>Erstelle dein erstes Semester oben.</p>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- ══════════════ Timer ══════════════ -->
+  <section id="page-timer" class="page-section" hidden>
+    <main class="timer-page">
+      <div class="page-header anim-up-1" style="text-align:center; margin-bottom: var(--sp-8)">
+        <h1>Lern-Timer</h1>
+        <p style="margin: 0 auto; display: inline-flex; align-items: center; gap: 0">
+          Fokussiere dich mit der Pomodoro-Technik.
+          <span class="info-btn" aria-label="Was ist die Pomodoro-Technik?">
+            i
+            <span class="info-tooltip" role="tooltip">
+              <strong>Pomodoro-Technik:</strong><br>
+              Du lernst in festen Blöcken, standardmäßig 25 Minuten, gefolgt von einer kurzen Pause von 5 Minuten. Nach <strong>4 solcher Blöcke</strong> gönnst du dir eine längere Pause von 15–30 Minuten. Die regelmäßigen Pausen halten deine Konzentration frisch und beugen Ermüdung vor. Alle Zeiten und die Blockanzahl kannst du unten in den Einstellungen anpassen.
+            </span>
+          </span>
+        </p>
+      </div>
+
+      <!-- Fach auswählen -->
+      <div class="subject-selector anim-up-2">
+        <label class="form-label" for="subjectSelect">Für welches Fach lernst du?</label>
+        <select class="form-input" id="subjectSelect">
+          <option value="">– Kein Fach ausgewählt –</option>
+        </select>
+        <div class="subject-progress" id="subjectProgress"></div>
+        <div class="subject-hint" id="subjectHint" hidden>Fach wählen um zu starten</div>
+      </div>
+
+      <!-- Phase-Auswahl -->
+      <div class="phase-tabs anim-up-3" role="tablist">
+        <button class="phase-tab active" id="tabWork"  role="tab" data-phase="work">Lernen</button>
+        <button class="phase-tab"        id="tabShort" role="tab" data-phase="short">Kurze Pause</button>
+        <button class="phase-tab"        id="tabLong"  role="tab" data-phase="long">Lange Pause</button>
+      </div>
+
+      <!-- Fortschrittsring + Timer-Anzeige -->
+      <div class="timer-ring-wrapper anim-up-4">
+        <svg class="timer-svg" viewBox="0 0 240 240" role="img" aria-label="Timer-Fortschritt">
+          <circle class="timer-track"    cx="120" cy="120" r="104" />
+          <circle class="timer-progress" cx="120" cy="120" r="104" id="timerRing" />
+        </svg>
+        <div class="timer-display">
+          <div class="timer-time" id="timerDisplay" aria-live="polite">25:00</div>
+          <div class="timer-phase-label" id="timerPhaseLabel">Lernphase</div>
+        </div>
+      </div>
+
+      <!-- Zyklus-Dots -->
+      <div class="cycle-dots" id="cycleDots" aria-label="Pomodoro-Zyklus"></div>
+
+      <!-- Steuerungs-Buttons -->
+      <div class="timer-controls">
+        <button class="btn btn-secondary btn-icon" id="skipBtn" title="Phase überspringen"
+                aria-label="Phase überspringen">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="5 4 15 12 5 20 5 4"/>
+            <line x1="19" y1="5" x2="19" y2="19"/>
+          </svg>
+        </button>
+
+        <button class="btn-play" id="playPauseBtn" aria-label="Timer starten">
+          <svg id="iconPlay" xmlns="http://www.w3.org/2000/svg" width="28" height="28"
+               viewBox="0 0 24 24" fill="white" aria-hidden="true">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <svg id="iconPause" xmlns="http://www.w3.org/2000/svg" width="28" height="28"
+               viewBox="0 0 24 24" fill="white" aria-hidden="true" style="display:none">
+            <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+          </svg>
+        </button>
+
+        <button class="btn btn-secondary btn-icon" id="resetBtn" title="Zurücksetzen"
+                aria-label="Timer zurücksetzen">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-4.02"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Lernzeit für gewähltes Modul -->
+      <div id="moduleTimeCard" hidden
+           style="background-color:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--r-lg);padding:var(--sp-5);margin-bottom:var(--sp-6);text-align:center">
+        <div id="moduleTimeLabel"
+             style="font-size:var(--text-xs);font-weight:600;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:var(--sp-3)">
+          Lernzeit heute für –
+        </div>
+        <div id="moduleTimeValue"
+             style="font-family:'Eczar',Georgia,serif;font-size:var(--text-3xl);font-weight:800;color:var(--fg);line-height:1">
+          0 Min
+        </div>
+      </div>
+
+      <!-- Tageszähler -->
+      <div class="today-stats">
+        <div class="today-stat">
+          <div class="today-stat-value" id="statPomodoros">0</div>
+          <div class="today-stat-label">Pomodoros heute</div>
+        </div>
+        <div class="today-stat">
+          <div class="today-stat-value" id="statFocusTime">0 Min</div>
+          <div class="today-stat-label">Fokuszeit heute</div>
+        </div>
+      </div>
+
+      <!-- Einstellungen -->
+      <div class="timer-settings">
+        <button class="settings-toggle" id="settingsToggle" aria-expanded="false">
+          <span>Einstellungen</span>
+          <svg class="settings-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="settings-body" id="settingsBody">
+          <div class="form-group">
+            <label class="form-label" for="setWork">Lernzeit (Min)</label>
+            <input class="form-input" type="number" id="setWork" min="1" max="120" value="25" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="setShort">Kurze Pause (Min)</label>
+            <input class="form-input" type="number" id="setShort" min="1" max="30" value="5" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="setLong">Lange Pause (Min)</label>
+            <input class="form-input" type="number" id="setLong" min="1" max="60" value="15" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="setCycles">Pomodoros bis lange Pause</label>
+            <input class="form-input" type="number" id="setCycles" min="2" max="8" value="4" />
+          </div>
+          <div style="display:flex; align-items:flex-end">
+            <button class="btn btn-secondary" id="applySettings" style="width:100%">Übernehmen</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </section>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/app.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/lernplan.js"></script>
+  <script src="js/module.js"></script>
+  <script src="js/timer.js"></script>
+  <script>initApp();</script>
 </body>
 </html>
