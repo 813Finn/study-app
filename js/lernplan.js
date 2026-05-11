@@ -163,6 +163,46 @@ function attachCardListeners(container) {
   });
 }
 
+/* ── Wochenstatistik ────────────────────────────────────── */
+function renderWeeklyStats(exams, plans) {
+  const totals = {};
+  DAYS_ORDER.forEach(dow => { totals[dow] = 0; });
+
+  exams.forEach(exam => {
+    const wh = (plans[exam.id] && plans[exam.id].weeklyHours) || {};
+    Object.entries(wh).forEach(([dow, h]) => {
+      totals[parseInt(dow)] += h;
+    });
+  });
+
+  const max    = Math.max(...Object.values(totals));
+  const hasAny = max > 0;
+
+  const el = document.getElementById('weeklyStats');
+  if (!hasAny) { el.innerHTML = ''; return; }
+
+  const safeMax = max || 1;
+  const cols = DAYS_ORDER.map(dow => {
+    const h   = totals[dow];
+    const pct = Math.round(h / safeMax * 100);
+    const val = h === 0 ? '–' : (h % 1 === 0 ? `${h}h` : `${h.toFixed(1).replace('.', ',')}h`);
+    return `
+      <div class="ws-col${h === 0 ? ' ws-col--empty' : ''}">
+        <div class="ws-bar-wrap">
+          <div class="ws-bar" style="height:${h === 0 ? 3 : Math.max(pct, 6)}%"></div>
+        </div>
+        <div class="ws-day">${DAYS_SHORT[dow]}</div>
+        <div class="ws-val">${val}</div>
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="card" style="margin-bottom:var(--sp-4)">
+      <div class="ws-title">Geplante Stunden pro Wochentag</div>
+      <div class="ws-grid">${cols}</div>
+    </div>`;
+}
+
 /* ── Hauptrender ────────────────────────────────────────── */
 function render() {
   const todayISO = DateUtils.todayISO();
@@ -172,6 +212,8 @@ function render() {
 
   const plans     = store.get('sf_exam_plans') || {};
   const container = document.getElementById('examPlansList');
+
+  renderWeeklyStats(exams, plans);
 
   if (!exams.length) {
     container.innerHTML = `
