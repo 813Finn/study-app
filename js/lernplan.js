@@ -53,7 +53,11 @@ function computeRemainingMinutes(weeklyHours, examDate) {
 
 /* ── Wochentag-Zeile ────────────────────────────────────── */
 function renderWeekdayRow(examId, weeklyHours) {
-  return DAYS_ORDER.map(dow => {
+  const weekTotal = Object.values(weeklyHours).reduce((s, h) => s + h, 0);
+  const totalLabel = weekTotal === 0 ? '–'
+    : weekTotal % 1 === 0 ? `${weekTotal}h` : `${weekTotal.toFixed(1).replace('.', ',')}h`;
+
+  const dayCols = DAYS_ORDER.map(dow => {
     const active  = dow in weeklyHours;
     const hours   = weeklyHours[dow] || 1;
     const inputId = `day-${examId}-${dow}`;
@@ -68,6 +72,12 @@ function renderWeekdayRow(examId, weeklyHours) {
                style="visibility:${active ? 'visible' : 'hidden'}" />
       </div>`;
   }).join('');
+
+  return dayCols + `
+    <div class="weekday-item weekday-total">
+      <span class="weekday-item-label">pro Woche</span>
+      <span class="weekday-total-val">${totalLabel}</span>
+    </div>`;
 }
 
 /* ── Eine Prüfungs-Karte rendern ────────────────────────── */
@@ -130,12 +140,30 @@ function renderExamCard(exam, plan, animIdx) {
 }
 
 /* ── Event-Listener für Karten ──────────────────────────── */
+function updateWeekTotal(card) {
+  let sum = 0;
+  card.querySelectorAll('.day-cb').forEach(cb => {
+    if (cb.checked) {
+      const h = parseFloat(cb.closest('.weekday-item').querySelector('.weekday-hours').value) || 1;
+      sum += h;
+    }
+  });
+  const el  = card.querySelector('.weekday-total-val');
+  if (el) el.textContent = sum === 0 ? '–'
+    : sum % 1 === 0 ? `${sum}h` : `${sum.toFixed(1).replace('.', ',')}h`;
+}
+
 function attachCardListeners(container) {
   container.querySelectorAll('.day-cb').forEach(cb => {
     cb.addEventListener('change', () => {
       const hoursInput = cb.closest('.weekday-item').querySelector('.weekday-hours');
       hoursInput.style.visibility = cb.checked ? 'visible' : 'hidden';
+      updateWeekTotal(cb.closest('[data-exam-id]'));
     });
+  });
+
+  container.querySelectorAll('.weekday-hours').forEach(inp => {
+    inp.addEventListener('input', () => updateWeekTotal(inp.closest('[data-exam-id]')));
   });
 
   container.querySelectorAll('.save-plan-btn').forEach(btn => {
